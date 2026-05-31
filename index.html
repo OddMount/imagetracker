@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bazaar Image Bot</title>
+<style>
+  :root {
+    --black: #0d0d0d;
+    --gray: #6b7280;
+    --light: #f5f5f5;
+    --border: #e5e7eb;
+    --accent: #0d0d0d;
+    --tag-insta: #e1306c;
+    --tag-official: #0066cc;
+    --tag-editorial: #7c3aed;
+    --tag-naver: #03c75a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif; background: #fff; color: var(--black); min-height: 100vh; }
+
+  /* Header */
+  header { border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+  .logo { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+  .logo span { color: var(--gray); font-weight: 400; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; padding: 0 32px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 14px 20px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; color: var(--gray); transition: all .15s; }
+  .tab.active { color: var(--black); border-bottom-color: var(--black); }
+
+  /* Main */
+  main { max-width: 1200px; margin: 0 auto; padding: 32px; }
+
+  /* Search area */
+  .search-box { background: var(--light); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+  .search-box label { font-size: 11px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+  .search-box input, .search-box textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
+    font-size: 14px; font-family: inherit; background: #fff; outline: none;
+    transition: border-color .15s;
+  }
+  .search-box input:focus, .search-box textarea:focus { border-color: var(--black); }
+  .search-box textarea { resize: vertical; min-height: 80px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .toggles { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .toggle { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; }
+  .toggle input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--black); }
+  .btn { margin-top: 16px; background: var(--black); color: #fff; border: none; border-radius: 8px; padding: 12px 28px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+  .btn:hover { opacity: .8; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Status */
+  .status { font-size: 13px; color: var(--gray); margin-bottom: 16px; min-height: 20px; }
+  .status.loading::after { content: ''; animation: dots 1.2s infinite; }
+  @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+  /* Results grid */
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .img-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fafafa; transition: box-shadow .15s; }
+  .img-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.1); }
+  .img-card .thumb { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; cursor: pointer; }
+  .img-card .thumb:hover { opacity: .9; }
+  .img-card .info { padding: 10px 12px; }
+  .source-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; color: #fff; margin-bottom: 6px; }
+  .tag-instagram { background: var(--tag-insta); }
+  .tag-official { background: var(--tag-official); }
+  .tag-editorial { background: var(--tag-editorial); }
+  .tag-general { background: var(--gray); }
+  .img-title { font-size: 11px; color: #444; line-height: 1.4; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .attribution { font-size: 10px; color: var(--gray); margin-bottom: 6px; }
+  .card-actions { display: flex; gap: 6px; }
+  .card-btn { flex: 1; padding: 5px 0; border: 1px solid var(--border); border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; background: #fff; font-family: inherit; transition: background .1s; }
+  .card-btn:hover { background: var(--light); }
+  .card-btn.copied { background: #e6f4ea; color: #1a7a3f; border-color: #a8d5b5; }
+
+  /* Restaurant cards */
+  .restaurant-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+  .rest-header { display: flex; gap: 16px; padding: 20px; }
+  .rest-photo { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; background: var(--light); flex-shrink: 0; }
+  .rest-info { flex: 1; }
+  .rest-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .rest-category { font-size: 12px; color: var(--gray); margin-bottom: 8px; }
+  .rest-detail { font-size: 13px; color: #444; margin-bottom: 3px; display: flex; gap: 6px; }
+  .rest-detail strong { color: var(--black); min-width: 36px; }
+  .rest-photos { display: flex; gap: 8px; padding: 0 20px 16px; overflow-x: auto; }
+  .rest-photos img { height: 100px; width: 100px; object-fit: cover; border-radius: 6px; flex-shrink: 0; cursor: pointer; }
+  .naver-link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--tag-naver); text-decoration: none; padding: 4px 10px; border: 1px solid var(--tag-naver); border-radius: 5px; margin-top: 8px; }
+
+  /* API key notice */
+  .notice { background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #5d4037; margin-bottom: 16px; }
+  .notice a { color: #0066cc; }
+
+  /* Panel toggle */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 60px 20px; color: var(--gray); }
+  .empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Bazaar <span>Image Bot</span></div>
+  <div style="font-size:12px;color:var(--gray);">에디터 전용 이미지 서치 툴</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('image')">🖼️ 이미지 서치</div>
+  <div class="tab" onclick="switchTab('restaurant')">🍽️ 맛집 정보</div>
+</div>
+
+<main>
+
+  <!-- 이미지 서치 패널 -->
+  <div class="panel active" id="panel-image">
+    <div class="search-box">
+      <label>글 주제 / 키워드</label>
+      <textarea id="img-query" placeholder="예: 레인코트 장마 방수 재킷&#10;예: 2026 봄 패션 트렌드"></textarea>
+      <div class="row">
+        <div>
+          <label>브랜드 / 인스타 계정 (선택)</label>
+          <input id="img-brands" placeholder="예: @arcteryx, Rains, 파타고니아" />
+        </div>
+        <div>
+          <label>추가 필터 (선택)</label>
+          <input id="img-filter" placeholder="예: 모델착용, campaign, editorial" />
+        </div>
+      </div>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="t-instagram" checked> 인스타그램 공개포스트</label>
+        <label class="toggle"><input type="checkbox" id="t-official" checked> 브랜드 공식 사이트</label>
+        <label class="toggle"><input type="checkbox" id="t-editorial" checked> 에디터리얼 미디어</label>
+        <label class="toggle"><input type="checkbox" id="t-pinterest"> 핀터레스트</label>
+      </div>
+      <button class="btn" onclick="searchImages()">이미지 서치</button>
+    </div>
+    <div class="status" id="img-status"></div>
+    <div class="results-grid" id="img-results">
+      <div class="empty" style="grid-column:1/-1">
+        <div class="icon">🔍</div>
+        <p>키워드를 입력하고 검색하세요</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 맛집 정보 패널 -->
+  <div class="panel" id="panel-restaurant">
+    <div id="naver-notice" class="notice" style="display:none">
+      ⚠️ 네이버 API 키가 없습니다. <a href="https://developers.naver.com/apps/#/register" target="_blank">네이버 개발자 센터</a>에서 앱 등록 후 아래에 입력하세요.
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <input id="naver-id" placeholder="Client ID" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:5px;font-size:12px">
+        <input id="naver-secret" placeholder="Client Secret" style="flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:5px;font-size:12px">
+        <button onclick="saveNaverKey()" style="padding:6px 14px;background:#03c75a;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:12px">저장</button>
+      </div>
+    </div>
+    <div class="search-box">
+      <label>업체명 (쉼표로 여러 곳 동시 검색)</label>
+      <input id="rest-query" placeholder="예: 발우공양, 스와니예, 계향각" />
+      <button class="btn" onclick="searchRestaurant()">네이버 검색</button>
+    </div>
+    <div class="status" id="rest-status"></div>
+    <div id="rest-results">
+      <div class="empty">
+        <div class="icon">🗺️</div>
+        <p>업체명을 입력하고 검색하세요</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── 탭 전환 ──────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === (tab === 'image' ? 0 : 1)));
+  document.getElementById('panel-image').classList.toggle('active', tab === 'image');
+  document.getElementById('panel-restaurant').classList.toggle('active', tab === 'restaurant');
+  if (tab === 'restaurant') checkNaverKey();
+}
+
+// ── 이미지 서치 ─────────────────────────────────────────
+async function searchImages() {
+  const query = document.getElementById('img-query').value.trim();
+  if (!query) return alert('키워드를 입력해주세요');
+  const status = document.getElementById('img-status');
+  const grid = document.getElementById('img-results');
+  status.textContent = '검색 중'; status.className = 'status loading';
+  grid.innerHTML = '';
+  document.querySelector('.btn').disabled = true;
+
+  const payload = {
+    query,
+    brands: document.getElementById('img-brands').value.split(',').map(s => s.trim()).filter(Boolean),
+    filter: document.getElementById('img-filter').value.trim(),
+    instagram: document.getElementById('t-instagram').checked,
+    official: document.getElementById('t-official').checked,
+    editorial: document.getElementById('t-editorial').checked,
+    pinterest: document.getElementById('t-pinterest').checked,
+  };
+
+  try {
+    const res = await fetch('/api/image_search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    renderImages(data.results || []);
+    status.textContent = `${data.results?.length || 0}개 결과`;
+    status.className = 'status';
+  } catch (e) {
+    status.textContent = '오류: ' + e.message;
+    status.className = 'status';
+  }
+  document.querySelector('.btn').disabled = false;
+}
+
+function tagClass(source) {
+  if (source === 'instagram') return 'tag-instagram';
+  if (source === 'official') return 'tag-official';
+  if (source === 'editorial') return 'tag-editorial';
+  return 'tag-general';
+}
+function tagLabel(source) {
+  const map = { instagram: 'Instagram', official: '공식사이트', editorial: 'Editorial', general: '검색결과' };
+  return map[source] || source;
+}
+
+function renderImages(results) {
+  const grid = document.getElementById('img-results');
+  if (!results.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="icon">😅</div><p>결과가 없어요. 키워드를 바꿔보세요</p></div>';
+    return;
+  }
+  grid.innerHTML = results.map((r, i) => `
+    <div class="img-card" id="card-${i}">
+      <img class="thumb" src="${r.thumbnail || r.image_url}"
+           onerror="this.style.display='none'"
+           onclick="window.open('${r.source_url}','_blank')"
+           loading="lazy">
+      <div class="info">
+        <span class="source-tag ${tagClass(r.source_type)}">${tagLabel(r.source_type)}</span>
+        <div class="img-title">${r.title || '제목 없음'}</div>
+        <div class="attribution">${r.attribution}</div>
+        <div class="card-actions">
+          <button class="card-btn" onclick="copyAttrib(${i}, '${escapeJs(r.attribution)}')">출처 복사</button>
+          <button class="card-btn" onclick="window.open('${r.source_url}','_blank')">원본 →</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyAttrib(i, text) {
+  navigator.clipboard.writeText(text);
+  const btn = document.querySelector(`#card-${i} .card-btn`);
+  btn.textContent = '복사됨!'; btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = '출처 복사'; btn.classList.remove('copied'); }, 2000);
+}
+
+function escapeJs(s) { return (s || '').replace(/'/g, "\\'").replace(/"/g, '\\"'); }
+
+// ── 맛집 정보 ────────────────────────────────────────────
+function checkNaverKey() {
+  const hasKey = localStorage.getItem('naver_client_id');
+  document.getElementById('naver-notice').style.display = hasKey ? 'none' : 'block';
+  if (hasKey) {
+    document.getElementById('naver-id').value = hasKey;
+    document.getElementById('naver-secret').value = localStorage.getItem('naver_client_secret') || '';
+  }
+}
+
+function saveNaverKey() {
+  const id = document.getElementById('naver-id').value.trim();
+  const secret = document.getElementById('naver-secret').value.trim();
+  if (!id || !secret) return alert('ID와 Secret을 모두 입력하세요');
+  localStorage.setItem('naver_client_id', id);
+  localStorage.setItem('naver_client_secret', secret);
+  document.getElementById('naver-notice').style.display = 'none';
+  alert('저장됐어요!');
+}
+
+async function searchRestaurant() {
+  const query = document.getElementById('rest-query').value.trim();
+  if (!query) return alert('업체명을 입력해주세요');
+  const status = document.getElementById('rest-status');
+  const container = document.getElementById('rest-results');
+  status.textContent = '검색 중'; status.className = 'status loading';
+  container.innerHTML = '';
+
+  const names = query.split(',').map(s => s.trim()).filter(Boolean);
+  const clientId = localStorage.getItem('naver_client_id') || '';
+  const clientSecret = localStorage.getItem('naver_client_secret') || '';
+
+  try {
+    const res = await fetch('/api/restaurant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ names, client_id: clientId, client_secret: clientSecret })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    renderRestaurants(data.results || []);
+    status.textContent = `${data.results?.length || 0}개 결과`;
+    status.className = 'status';
+  } catch (e) {
+    status.textContent = '오류: ' + e.message;
+    status.className = 'status';
+  }
+}
+
+function renderRestaurants(results) {
+  const container = document.getElementById('rest-results');
+  if (!results.length) {
+    container.innerHTML = '<div class="empty"><div class="icon">😅</div><p>결과가 없어요</p></div>';
+    return;
+  }
+  container.innerHTML = results.map(r => `
+    <div class="restaurant-card">
+      <div class="rest-header">
+        <img class="rest-photo" src="${r.thumbnail || ''}" onerror="this.style.background='#eee';this.src=''" alt="">
+        <div class="rest-info">
+          <div class="rest-name">${r.name}</div>
+          <div class="rest-category">${r.category}</div>
+          ${r.road_address ? `<div class="rest-detail"><strong>주소</strong>${r.road_address}</div>` : ''}
+          ${r.tel ? `<div class="rest-detail"><strong>전화</strong>${r.tel}</div>` : ''}
+          ${r.description ? `<div class="rest-detail"><strong>설명</strong>${r.description}</div>` : ''}
+          <a class="naver-link" href="${r.link}" target="_blank">네이버 지도에서 보기 →</a>
+        </div>
+      </div>
+      ${r.photos && r.photos.length ? `
+        <div class="rest-photos">
+          ${r.photos.map(p => `<img src="${p}" loading="lazy" onclick="window.open('${r.link}','_blank')" onerror="this.remove()">`).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+// 엔터키 검색
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const activePanel = document.querySelector('.panel.active').id;
+    if (activePanel === 'panel-image' && document.activeElement.id !== 'img-query') searchImages();
+    if (activePanel === 'panel-restaurant') searchRestaurant();
+  }
+});
+</script>
+</body>
+</html>
