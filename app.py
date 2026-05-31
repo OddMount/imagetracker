@@ -42,8 +42,22 @@ def ddg_images(query, max_results=10):
     try:
         with DDGS() as ddgs:
             return list(ddgs.images(query, max_results=max_results, safesearch='off'))
-    except Exception:
+    except Exception as e:
+        app.logger.error(f"DDG error for '{query}': {type(e).__name__}: {e}")
         return []
+
+
+@app.route('/api/debug')
+def debug():
+    errors = []
+    results = []
+    try:
+        with DDGS() as ddgs:
+            hits = list(ddgs.images('rain jacket', max_results=3, safesearch='off'))
+            results = [h.get('url', '') for h in hits]
+    except Exception as e:
+        errors.append(f"{type(e).__name__}: {str(e)}")
+    return jsonify({'ddg_results': results, 'errors': errors, 'python': __import__('sys').version})
 
 
 def search_images(query, brands, extra_filter, instagram, official, editorial, pinterest):
