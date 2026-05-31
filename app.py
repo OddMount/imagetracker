@@ -229,6 +229,35 @@ def restaurant_route():
     return jsonify({'results': all_results})
 
 
+def maximize_url(url):
+    """CDN URL에서 사이즈 제한 파라미터 제거해 최대 해상도로 변환"""
+    # Shopify/Rains: ?width=720 → width=2000
+    url = re.sub(r'(\?|&)width=\d+', r'\g<1>width=2000', url)
+    # Hypebeast: w=720 → w=1260
+    url = re.sub(r'(\?|&)w=\d+', r'\g<1>w=1260', url)
+    # Arc'teryx Sanity: h=910&q=75 → h=2000&q=95
+    url = re.sub(r'(\?|&)h=\d+', r'\g<1>h=2000', url)
+    url = re.sub(r'(\?|&)q=\d+', r'\g<1>q=95', url)
+    # Goldwin: 1800x1800 이미 최고화질, 변경 불필요
+    return url
+
+
+def smart_upscale(img, min_px=1000):
+    """1000px 미만 이미지를 LANCZOS + 언샤프 마스킹으로 업스케일"""
+    from PIL import ImageFilter
+    w, h = img.size
+    if w >= min_px and h >= min_px:
+        return img, False
+
+    # 필요한 배율 계산 (2x or 4x)
+    scale = 4 if max(w, h) < 500 else 2
+    new_size = (w * scale, h * scale)
+    img = img.resize(new_size, Image.LANCZOS)
+    # 업스케일 후 선명도 보정
+    img = img.filter(ImageFilter.UnsharpMask(radius=1.2, percent=120, threshold=3))
+    return img, True
+
+
 @app.route('/api/download')
 def download_image():
     url = request.args.get('url', '').strip()
@@ -236,15 +265,40 @@ def download_image():
     if not url:
         return '이미지 URL이 없어요', 400
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
-                   'Referer': url.split('/')[0] + '//' + url.split('/')[2]}
-        r = req.get(url, headers=headers, timeout=15)
-        r.raise_for_status()
+        # 1. CDN URL 최대 해상도로 변환
+        hires_url = maximize_url(url)
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+            'Referer': '/'.join(url.split('/')[:3])
+        }
+
+        # 2. 고해상도 URL 시도, 실패하면 원본 URL
+        for fetch_url in [hires_url, url]:
+            try:
+                r = req.get(fetch_url, headers=headers, timeout=15)
+                if r.status_code == 200 and len(r.content) > 5000:
+                    break
+            except Exception:
+                continue
+        else:
+            return '이미지를 가져올 수 없어요', 500
+
+        # 3. 이미지 열기 + RGB 변환
         img = Image.open(io.BytesIO(r.content)).convert('RGB')
+
+        # 4. 해상도 부족하면 업스케일
+        img, was_upscaled = smart_upscale(img, min_px=1000)
+
+        # 5. JPG 저장 (원본 화질 95)
         buf = io.BytesIO()
         img.save(buf, 'JPEG', quality=95, optimize=True)
         buf.seek(0)
+
         safe_name = re.sub(r'[^\w가-힣\-]', '_', filename)
+        if was_upscaled:
+            safe_name += '_upscaled'
+
         return send_file(buf, mimetype='image/jpeg',
                          as_attachment=True,
                          download_name=f'{safe_name}.jpg')
