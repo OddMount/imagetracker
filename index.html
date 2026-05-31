@@ -209,6 +209,19 @@ async function searchImages() {
       body: JSON.stringify(payload)
     });
     const data = await res.json();
+    if (data.setup_needed) {
+      grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+        <div class="icon">🔑</div>
+        <p><strong>Serper API 키 설정 필요</strong></p>
+        <p style="margin-top:8px;font-size:12px;color:#888">
+          1. <a href="https://serper.dev" target="_blank">serper.dev</a> 무료 가입 → API Key 복사<br>
+          2. <a href="https://vercel.com/oddmounts-projects/imagetracker/settings/environment-variables" target="_blank">Vercel 환경변수</a>에 <code>SERPER_API_KEY</code> 추가 → Redeploy
+        </p>
+      </div>`;
+      status.textContent = 'API 키 설정 필요';
+      document.querySelector('.btn').disabled = false;
+      return;
+    }
     if (data.error) throw new Error(data.error);
     renderImages(data.results || []);
     status.textContent = `${data.results?.length || 0}개 결과`;

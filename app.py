@@ -1,116 +1,119 @@
-from flask import Flask, send_file, request, jsonify
-import json
-import urllib.request
-import urllib.parse
-import html
-import re
-from duckduckgo_search import DDGS
+from flask import Flask, send_file, request, jsonify, Response
+import json, os, urllib.request, urllib.parse, html, re
+import requests as req
 
 app = Flask(__name__)
 
+SERPER_KEY = os.environ.get('SERPER_API_KEY', '')
 
-# ── 이미지 검색 유틸 ─────────────────────────────────────
+EDITORIAL_DOMAINS = ['hypebeast.com', 'highsnobiety.com', 'vogue.com',
+                     'harpersbazaar.com', 'elle.com', 'gq.com', 'wmagazine.com']
+
+
+# ── 이미지 검색 ──────────────────────────────────────────
+
+def classify_source(url):
+    if 'instagram.com' in url: return 'instagram'
+    if 'pinterest.com' in url: return 'pinterest'
+    if any(d in url for d in EDITORIAL_DOMAINS): return 'editorial'
+    return 'general'
+
 
 def build_attribution(page_url, source_name=''):
     if 'instagram.com' in page_url:
         parts = page_url.rstrip('/').split('/')
         try:
-            ig_idx = next(i for i, p in enumerate(parts) if 'instagram.com' in p)
-            account = parts[ig_idx + 1] if ig_idx + 1 < len(parts) else ''
-            if account and account not in ('p', 'reel', 'tv', 'stories'):
-                return f"사진/ @{account} (Instagram)"
+            idx = next(i for i, p in enumerate(parts) if 'instagram.com' in p)
+            acct = parts[idx + 1] if idx + 1 < len(parts) else ''
+            if acct and acct not in ('p', 'reel', 'tv', 'stories', ''):
+                return f"사진/ @{acct} (Instagram)"
         except StopIteration:
             pass
         return "사진/ Instagram"
     if 'pinterest.com' in page_url:
         return "사진/ Pinterest"
-    return f"사진/ {source_name} 제공" if source_name else "사진/ 출처 확인 필요"
+    domain = source_name or (page_url.split('/')[2] if page_url.startswith('http') else '')
+    return f"사진/ {domain} 제공" if domain else "사진/ 출처 확인 필요"
 
 
-def classify_source(url):
-    if 'instagram.com' in url:
-        return 'instagram'
-    if 'pinterest.com' in url:
-        return 'pinterest'
-    if any(d in url for d in ['hypebeast.com', 'highsnobiety.com', 'vogue.com',
-                               'harpersbazaar.com', 'elle.com', 'gq.com', 'wmagazine.com']):
-        return 'editorial'
-    return 'general'
-
-
-def ddg_images(query, max_results=10):
+def serper_images(query, num=10):
+    if not SERPER_KEY:
+        return []
     try:
-        with DDGS() as ddgs:
-            return list(ddgs.images(query, max_results=max_results, safesearch='off'))
+        r = req.post(
+            'https://google.serper.dev/images',
+            headers={'X-API-KEY': SERPER_KEY, 'Content-Type': 'application/json'},
+            json={'q': query, 'num': num, 'gl': 'kr', 'hl': 'ko'},
+            timeout=10
+        )
+        return r.json().get('images', [])
     except Exception as e:
-        app.logger.error(f"DDG error for '{query}': {type(e).__name__}: {e}")
+        app.logger.error(f"Serper error: {e}")
         return []
 
 
-@app.route('/api/debug')
-def debug():
-    errors = []
-    results = []
-    try:
-        with DDGS() as ddgs:
-            hits = list(ddgs.images('rain jacket', max_results=3, safesearch='off'))
-            results = [h.get('url', '') for h in hits]
-    except Exception as e:
-        errors.append(f"{type(e).__name__}: {str(e)}")
-    return jsonify({'ddg_results': results, 'errors': errors, 'python': __import__('sys').version})
+def format_serper(items, source_override=None):
+    out = []
+    for item in items:
+        page = item.get('link', '')
+        img = item.get('imageUrl', '')
+        if not img:
+            continue
+        st = source_override or classify_source(page)
+        out.append({
+            'image_url': img,
+            'thumbnail': item.get('thumbnailUrl', img),
+            'source_url': page,
+            'title': item.get('title', ''),
+            'source_type': st,
+            'attribution': build_attribution(page, item.get('source', '')),
+        })
+    return out
 
 
 def search_images(query, brands, extra_filter, instagram, official, editorial, pinterest):
-    results = []
-    seen = set()
+    if not SERPER_KEY:
+        return []
 
-    def add(items, source_type_override=None):
+    results, seen = [], set()
+
+    def add(items):
         for item in items:
-            img = item.get('image', '')
-            page = item.get('url', '')
-            if not img or img in seen:
-                continue
-            seen.add(img)
-            st = source_type_override or classify_source(page)
-            results.append({
-                'image_url': img,
-                'thumbnail': item.get('thumbnail', img),
-                'source_url': page,
-                'title': item.get('title', ''),
-                'source_type': st,
-                'attribution': build_attribution(page, item.get('source', '')),
-            })
+            key = item['image_url']
+            if key not in seen:
+                seen.add(key)
+                results.append(item)
 
-    brand_str = ' '.join(brands)
-    filter_str = extra_filter or ''
+    brand_str = ' '.join(b.lstrip('@') for b in brands)
+    f = extra_filter or ''
 
     if instagram:
-        add(ddg_images(f"site:instagram.com {query} {brand_str} {filter_str}".strip(), 12), 'instagram')
-        for b in brands[:3]:
+        add(format_serper(serper_images(f"site:instagram.com {query} {brand_str} {f}".strip(), 15), 'instagram'))
+        for b in brands[:2]:
             handle = b.lstrip('@')
-            add(ddg_images(f"site:instagram.com/{handle} {query}", 5), 'instagram')
+            add(format_serper(serper_images(f"site:instagram.com/{handle} {query}", 8), 'instagram'))
 
     if editorial:
-        sites = 'site:hypebeast.com OR site:highsnobiety.com OR site:vogue.com OR site:harpersbazaar.com OR site:elle.com'
-        add(ddg_images(f"({sites}) {query} {brand_str} {filter_str}".strip(), 10), 'editorial')
+        sites = ' OR '.join(f"site:{d}" for d in EDITORIAL_DOMAINS[:4])
+        add(format_serper(serper_images(f"({sites}) {query} {brand_str} {f}".strip(), 10), 'editorial'))
 
     if official and brands:
-        for b in brands[:3]:
+        for b in brands[:2]:
             name = b.lstrip('@')
-            add(ddg_images(
-                f"{name} official {query} {filter_str} -site:instagram.com -site:pinterest.com".strip(), 6
-            ), 'official')
+            add(format_serper(serper_images(
+                f"{name} {query} {f} -site:instagram.com -site:pinterest.com".strip(), 8
+            ), 'official'))
 
     if pinterest:
-        add(ddg_images(f"site:pinterest.com {query} {brand_str} {filter_str}".strip(), 8), 'pinterest')
+        add(format_serper(serper_images(f"site:pinterest.com {query} {brand_str} {f}".strip(), 8), 'pinterest'))
 
-    if len(results) < 8:
-        add(ddg_images(f"{query} {brand_str} {filter_str}".strip(), 10))
+    if len(results) < 6:
+        add(format_serper(serper_images(f"{query} {brand_str} {f}".strip(), 10)))
 
     return results
 
 
-# ── 맛집 검색 유틸 ───────────────────────────────────────
+# ── 맛집 검색 ────────────────────────────────────────────
 
 def clean_html(text):
     return html.unescape(re.sub('<[^>]+>', '', text or '')).strip()
@@ -119,46 +122,50 @@ def clean_html(text):
 def search_naver(name, client_id, client_secret):
     query = urllib.parse.quote(name)
     url = f"https://openapi.naver.com/v1/search/local.json?query={query}&display=3&sort=comment"
-    req = urllib.request.Request(url)
-    req.add_header('X-Naver-Client-Id', client_id)
-    req.add_header('X-Naver-Client-Secret', client_secret)
-    with urllib.request.urlopen(req, timeout=8) as r:
-        data = json.loads(r.read().decode())
-    return [
-        {
-            'name': clean_html(item.get('title', '')),
-            'category': item.get('category', ''),
-            'road_address': item.get('roadAddress', ''),
-            'address': item.get('address', ''),
-            'tel': item.get('telephone', ''),
-            'description': item.get('description', ''),
-            'link': item.get('link', ''),
-            'thumbnail': item.get('thumbnail', ''),
-            'photos': [],
-        }
-        for item in data.get('items', [])
-    ]
+    r = urllib.request.Request(url)
+    r.add_header('X-Naver-Client-Id', client_id)
+    r.add_header('X-Naver-Client-Secret', client_secret)
+    with urllib.request.urlopen(r, timeout=8) as resp:
+        data = json.loads(resp.read().decode())
+    return [{
+        'name': clean_html(item.get('title', '')),
+        'category': item.get('category', ''),
+        'road_address': item.get('roadAddress', ''),
+        'address': item.get('address', ''),
+        'tel': item.get('telephone', ''),
+        'description': item.get('description', ''),
+        'link': item.get('link', ''),
+        'thumbnail': item.get('thumbnail', ''),
+        'photos': [],
+    } for item in data.get('items', [])]
 
 
-def search_restaurant_fallback(name):
+def search_restaurant_serper(name):
+    if not SERPER_KEY:
+        return []
     try:
-        with DDGS() as ddgs:
-            hits = list(ddgs.text(f"site:map.naver.com {name}", max_results=3))
-        return [
-            {
+        r = req.post(
+            'https://google.serper.dev/search',
+            headers={'X-API-KEY': SERPER_KEY, 'Content-Type': 'application/json'},
+            json={'q': f"{name} 맛집 주소 전화번호 메뉴", 'gl': 'kr', 'hl': 'ko', 'num': 3},
+            timeout=10
+        )
+        data = r.json()
+        results = []
+        for item in data.get('organic', []):
+            results.append({
                 'name': name,
                 'category': '',
-                'road_address': h.get('body', '')[:120],
+                'road_address': item.get('snippet', '')[:120],
                 'address': '',
                 'tel': '',
-                'description': h.get('body', ''),
-                'link': h.get('href', ''),
+                'description': item.get('snippet', ''),
+                'link': item.get('link', ''),
                 'thumbnail': '',
                 'photos': [],
-                'note': '⚠️ 네이버 API 키 없이 검색 — 정확도가 낮을 수 있어요',
-            }
-            for h in hits
-        ]
+                'note': '⚠️ 네이버 API 키 없이 구글 검색 결과',
+            })
+        return results
     except Exception:
         return []
 
@@ -173,8 +180,10 @@ def index():
 @app.route('/api/image_search', methods=['POST', 'OPTIONS'])
 def image_search_route():
     if request.method == 'OPTIONS':
-        return _cors_ok()
+        return _cors()
     body = request.get_json(force=True) or {}
+    if not SERPER_KEY:
+        return jsonify({'error': 'SERPER_API_KEY not set', 'results': [], 'setup_needed': True}), 200
     try:
         results = search_images(
             query=body.get('query', ''),
@@ -187,13 +196,13 @@ def image_search_route():
         )
         return jsonify({'results': results})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'results': []}), 200
 
 
 @app.route('/api/restaurant', methods=['POST', 'OPTIONS'])
 def restaurant_route():
     if request.method == 'OPTIONS':
-        return _cors_ok()
+        return _cors()
     body = request.get_json(force=True) or {}
     names = body.get('names', [])
     client_id = body.get('client_id', '').strip()
@@ -204,14 +213,21 @@ def restaurant_route():
             if client_id and client_secret:
                 all_results.extend(search_naver(name, client_id, client_secret))
             else:
-                all_results.extend(search_restaurant_fallback(name))
+                all_results.extend(search_restaurant_serper(name))
         except Exception as e:
             all_results.append({'name': name, 'error': str(e)})
     return jsonify({'results': all_results})
 
 
-def _cors_ok():
-    from flask import Response
+@app.route('/api/debug')
+def debug():
+    return jsonify({
+        'serper_key_set': bool(SERPER_KEY),
+        'serper_key_prefix': SERPER_KEY[:6] + '...' if SERPER_KEY else None,
+    })
+
+
+def _cors():
     r = Response('', status=200)
     r.headers['Access-Control-Allow-Origin'] = '*'
     r.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
