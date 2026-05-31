@@ -1,6 +1,7 @@
 from flask import Flask, send_file, request, jsonify, Response
-import json, os, urllib.request, urllib.parse, html, re
+import json, os, io, urllib.request, urllib.parse, html, re
 import requests as req
+from PIL import Image
 
 app = Flask(__name__)
 
@@ -226,6 +227,29 @@ def restaurant_route():
         except Exception as e:
             all_results.append({'name': name, 'error': str(e)})
     return jsonify({'results': all_results})
+
+
+@app.route('/api/download')
+def download_image():
+    url = request.args.get('url', '').strip()
+    filename = request.args.get('filename', 'image').strip()
+    if not url:
+        return '이미지 URL이 없어요', 400
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36',
+                   'Referer': url.split('/')[0] + '//' + url.split('/')[2]}
+        r = req.get(url, headers=headers, timeout=15)
+        r.raise_for_status()
+        img = Image.open(io.BytesIO(r.content)).convert('RGB')
+        buf = io.BytesIO()
+        img.save(buf, 'JPEG', quality=95, optimize=True)
+        buf.seek(0)
+        safe_name = re.sub(r'[^\w가-힣\-]', '_', filename)
+        return send_file(buf, mimetype='image/jpeg',
+                         as_attachment=True,
+                         download_name=f'{safe_name}.jpg')
+    except Exception as e:
+        return f'다운로드 실패: {e}', 500
 
 
 @app.route('/api/debug')
