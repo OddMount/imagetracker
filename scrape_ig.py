@@ -32,6 +32,69 @@ IG_HEADERS = {
     "X-IG-App-ID": "936619743392459",
 }
 
+IMAGETRACKER_URL = "https://imagetracker-nine.vercel.app"
+
+# 스폿별 관련 키워드 (기사 내용 기반)
+KEYWORDS = {
+    "seoulgypsyfermenteria": "사워 비어 피자 발효 맥주",
+    "ruf_pub":               "탭룸 맥주 스탠딩바",
+    "heywave_sindang":       "수제맥주 사워 스타우트 안주",
+    "ggeek_beer":            "크래프트비어 맥주 IPA",
+    "kokkiri_brewery":       "맥주 비엔나 라거 안주 탭룸",
+}
+
+
+def search_relevant_shortcodes(account, keywords, num=15):
+    """Serper로 계정에서 관련 포스트 shortcode 검색"""
+    try:
+        r = requests.post(
+            f"{IMAGETRACKER_URL}/api/image_search",
+            json={"query": f"site:instagram.com/{account} {keywords}", "num_results": num},
+            timeout=15
+        )
+        results = r.json().get("results", [])
+        shortcodes = []
+        for res in results:
+            src = res.get("source_url", "")
+            m = re.search(r'instagram\.com(?:/[^/]+)?/p/([^/?]+)', src)
+            if m:
+                sc = m.group(1)
+                if sc not in shortcodes:
+                    shortcodes.append(sc)
+        print(f"  Serper 관련 shortcode {len(shortcodes)}개: {shortcodes[:5]}")
+        return shortcodes
+    except Exception as e:
+        print(f"  Serper 검색 실패: {e}")
+        return []
+
+
+def get_feed_posts(session, account, max_posts=12):
+    """web_profile_info API로 포스트 목록 + 이미지 URL + 캡션 수집"""
+    r = session.get(
+        f"https://www.instagram.com/api/v1/users/web_profile_info/?username={account}",
+        headers=IG_HEADERS, timeout=15
+    )
+    if r.status_code != 200:
+        print(f"  프로필 API 실패: {r.status_code}")
+        return {}
+
+    edges = r.json()["data"]["user"]["edge_owner_to_timeline_media"]["edges"]
+    posts = {}
+    for edge in edges[:max_posts]:
+        node = edge["node"]
+        sc = node["shortcode"]
+        # 슬라이드면 첫 장
+        if node.get("__typename") == "GraphSidecar":
+            children = node.get("edge_sidecar_to_children", {}).get("edges", [])
+            img_url = children[0]["node"]["display_url"] if children else node["display_url"]
+        else:
+            img_url = node["display_url"]
+        # 캡션
+        cap_edges = node.get("edge_media_to_caption", {}).get("edges", [])
+        caption = cap_edges[0]["node"]["text"] if cap_edges else ""
+        posts[sc] = {"img_url": img_url, "caption": caption}
+    return posts
+
 
 def load_session():
     sessions = list(SESSION_DIR.glob("session-*"))
@@ -94,11 +157,43 @@ def get_profile_posts(session, account, max_images=MAX_IMAGES):
     return results
 
 
-def scrape_account(session, account):
+def scrape_account(session, account, max_images=MAX_IMAGES):
+    import time
     print(f"\n@{account} 스크래핑 중...")
     try:
-        results = get_profile_posts(session, account)
-        print(f"  → {len(results)}장 수집")
+        keywords = KEYWORDS.get(account, "맥주 수제맥주")
+        keyword_list = keywords.split()
+
+        # 1. 피드에서 포스트 목록 + 이미지 URL + 캡션 수집
+        print(f"  피드 포스트 수집 중...")
+        feed = get_feed_posts(session, account, max_posts=50)
+        print(f"  피드 포스트 {len(feed)}개 확인")
+
+        if not feed:
+            return []
+
+        # 2. 캡션 키워드로 관련성 점수 계산
+        scored = []
+        for sc, info in feed.items():
+            caption = info["caption"].lower()
+            score = sum(1 for kw in keyword_list if kw in caption)
+            scored.append((score, sc, info["img_url"]))
+
+        # 3. 관련성 높은 순 정렬 (점수 같으면 피드 순서 유지)
+        scored.sort(key=lambda x: -x[0])
+
+        results = []
+        for score, sc, img_url in scored[:max_images]:
+            tag = f"관련({score}점)" if score > 0 else "최신"
+            print(f"  [{tag}] ✓ {sc}")
+            results.append({
+                "img_url": img_url,
+                "post_id": sc,
+                "post_url": f"https://www.instagram.com/p/{sc}/",
+            })
+
+        relevant_count = sum(1 for s, _, _ in scored[:max_images] if s > 0)
+        print(f"  → {len(results)}장 수집 (관련 {relevant_count}장 + 최신 보충 {len(results)-relevant_count}장)")
         return results
     except Exception as e:
         print(f"  실패 ({type(e).__name__}): {e}")
@@ -133,12 +228,11 @@ def card_html(saved_item, account):
     post_id = saved_item["post_id"]
     post_url = saved_item["post_url"]
     web_path = f"/ref/images/beer_summer/{account}/{post_id}.jpg"
-    enc = quote(web_path, safe="")
     return f"""<div class="card ig-card">
       <div class="img-wrap">
         <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
         <span class="badge" style="background:#e1306c">Instagram</span>
-        <a class="dl-btn" href="/api/download?url={enc}&filename={account}_{post_id}" download>⬇ JPG</a>
+        <a class="dl-btn" href="{web_path}" download="{account}_{post_id}.jpg">⬇ JPG</a>
       </div>
       <div class="meta">
         <p class="attr">사진/ @{account}</p>
