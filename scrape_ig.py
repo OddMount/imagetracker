@@ -23,7 +23,7 @@ SPOTS = [
     {"account": "seoulgypsyfermenteria", "name": "서울집시 퍼멘테리아", "color": "#1e3a1e"},
     {"account": "ruf_pub",               "name": "루프 RUF",           "color": "#1a2c4a"},
     {"account": "heywave_sindang",        "name": "헤이웨이브",          "color": "#4a2000"},
-    {"account": "ggeek_beer",             "name": "끽비어 컴퍼니",       "color": "#2a1a4a"},
+    {"account": "ggeekbeer",              "name": "끽비어 컴퍼니",       "color": "#2a1a4a"},
     {"account": "kokkiri_brewery",        "name": "코끼리 브루어리",      "color": "#1a3a2a"},
 ]
 
@@ -39,7 +39,7 @@ KEYWORDS = {
     "seoulgypsyfermenteria": "사워 비어 피자 발효 맥주",
     "ruf_pub":               "탭룸 맥주 스탠딩바",
     "heywave_sindang":       "수제맥주 사워 스타우트 안주",
-    "ggeek_beer":            "크래프트비어 맥주 IPA",
+    "ggeekbeer":             "크래프트비어 맥주 IPA 세운상가",
     "kokkiri_brewery":       "맥주 비엔나 라거 안주 탭룸",
 }
 
