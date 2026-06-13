@@ -21,8 +21,9 @@ section{margin-bottom:52px}
 .spot-meta{display:flex;align-items:center;gap:16px;padding:10px 20px;background:rgba(0,0,0,.04);border:1px solid #e0e0e0;border-top:none;margin-bottom:16px;border-radius:0 0 4px 4px}
 .ig-tag{font-size:11px;font-weight:700;color:#0066cc;background:#e8f0fe;padding:3px 8px;border-radius:20px}
 .addr{font-size:11px;color:#666}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-.card{background:#fff;border:1px solid #e8e8e8;border-radius:8px;overflow:hidden;transition:box-shadow .15s}
+.grid{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;padding-bottom:10px;-webkit-overflow-scrolling:touch}
+.grid::-webkit-scrollbar{height:5px}.grid::-webkit-scrollbar-track{background:#f0f0f0;border-radius:3px}.grid::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:8px;overflow:hidden;transition:box-shadow .15s;flex:0 0 180px}
 .card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1)}
 .img-wrap{position:relative;aspect-ratio:1;overflow:hidden;background:#f0f0f0}
 .img-wrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
