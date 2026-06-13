@@ -13,16 +13,15 @@ header{background:#111;color:#fff;padding:28px 40px;display:flex;justify-content
 .hd-sub{font-size:13px;color:#888;margin-top:5px}
 .hd-meta{font-size:12px;color:#666;text-align:right;line-height:1.8}
 .notice{background:#fffbeb;border-bottom:1px solid #f0e68c;padding:10px 40px;font-size:12px;color:#7a6000}
-main{padding:32px 40px;overflow-x:auto}
-.sections-row{display:flex;gap:24px;align-items:flex-start;min-width:max-content}
-section{width:260px;flex-shrink:0;margin-bottom:0}
+main{max-width:1280px;margin:0 auto;padding:32px 40px}
+section{margin-bottom:52px}
 .brand-header{display:flex;align-items:baseline;gap:14px;padding:14px 20px;border-radius:8px 8px 0 0}
 .brand-name{font-size:18px;font-weight:800;color:#fff}
 .brand-product{font-size:12px;color:rgba(255,255,255,.55)}
 .spot-meta{display:flex;align-items:center;gap:16px;padding:10px 20px;background:rgba(0,0,0,.04);border:1px solid #e0e0e0;border-top:none;margin-bottom:16px;border-radius:0 0 4px 4px}
 .ig-tag{font-size:11px;font-weight:700;color:#0066cc;background:#e8f0fe;padding:3px 8px;border-radius:20px}
 .addr{font-size:11px;color:#666}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
 .card{background:#fff;border:1px solid #e8e8e8;border-radius:8px;overflow:hidden;transition:box-shadow .15s}
 .card:hover{box-shadow:0 4px 20px rgba(0,0,0,.1)}
 .img-wrap{position:relative;aspect-ratio:1;overflow:hidden;background:#f0f0f0}
@@ -50,7 +49,7 @@ footer{text-align:center;padding:40px;font-size:11px;color:#aaa;border-top:1px s
 </header>
 <div class="notice">⚠️ 이미지에 마우스 올리면 ⬇ JPG 버튼 표시됩니다.</div>
 <main>
-<div class="sections-row">
+
   <section id="sec-rasa_seoul">
     <div class="brand-header" style="background:#3d1f00">
       <span class="brand-name">커리하우스 라사</span>
@@ -711,7 +710,6 @@ footer{text-align:center;padding:40px;font-size:11px;color:#aaa;border-top:1px s
     </div></div></div>
   </section>
 
-</div>
 </main>
 <footer>Harper's Bazaar Korea · 이미지 레퍼런스 페이지 · 내부 사용 전용</footer>
 </body>
