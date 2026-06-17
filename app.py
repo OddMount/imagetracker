@@ -181,10 +181,11 @@ def index():
 @app.route('/ref/<path:filename>')
 def reference(filename):
     import os
-    filepath = os.path.join(os.path.dirname(__file__), 'references', filename)
-    if not os.path.exists(filepath):
-        return '페이지를 찾을 수 없어요', 404
-    return send_file(filepath)
+    base = os.path.join(os.path.dirname(__file__), 'references', filename)
+    for path in [base, base + '.html']:
+        if os.path.exists(path):
+            return send_file(path)
+    return '페이지를 찾을 수 없어요', 404
 
 
 @app.route('/api/image_search', methods=['POST', 'OPTIONS'])
