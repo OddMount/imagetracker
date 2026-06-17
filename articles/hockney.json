@@ -1,0 +1,62 @@
+{
+  "slug": "hockney",
+  "title": "세상을 보는 법을 가르쳐준 화가, 데이비드 호크니를 기리며",
+  "spots": [
+    {
+      "name": "초기 작품",
+      "dir": "early_works",
+      "type": "google_images",
+      "query": "David Hockney early paintings 1960s \"We Two Boys Together Clinging\" \"Tea Painting\" Royal College of Art",
+      "max": 12,
+      "color": "#8b5e3c"
+    },
+    {
+      "name": "대표 작품",
+      "dir": "iconic_works",
+      "type": "google_images",
+      "query": "David Hockney \"A Bigger Splash\" \"Pool with Two Figures\" \"Mr and Mrs Clark\" painting Tate collection",
+      "max": 12,
+      "color": "#1a6bbf"
+    },
+    {
+      "name": "전시 사진",
+      "dir": "exhibitions",
+      "type": "google_images",
+      "query": "David Hockney exhibition Tate Modern Pompidou \"Fondation Louis Vuitton\" retrospective installation view 2024",
+      "max": 12,
+      "color": "#2d6a4f"
+    },
+    {
+      "name": "인물 사진",
+      "dir": "portraits",
+      "type": "google_images",
+      "query": "David Hockney portrait photograph glasses striped suit cigarette studio official press",
+      "max": 12,
+      "color": "#555555"
+    },
+    {
+      "name": "해리 스타일스 초상화",
+      "dir": "harry_styles",
+      "type": "google_images",
+      "query": "David Hockney Harry Styles portrait painting 2023",
+      "max": 10,
+      "color": "#c84b31"
+    },
+    {
+      "name": "아이패드·디지털 드로잉",
+      "dir": "ipad_drawings",
+      "type": "google_images",
+      "query": "David Hockney iPad iPhone drawing digital watercolor flowers Normandy \"Arrival of Spring\"",
+      "max": 12,
+      "color": "#7b2d8b"
+    },
+    {
+      "name": "다큐멘터리",
+      "dir": "documentary",
+      "type": "google_images",
+      "query": "\"A Bigger Splash\" 1973 documentary film Jack Hazan David Hockney still",
+      "max": 10,
+      "color": "#333333"
+    }
+  ]
+}
