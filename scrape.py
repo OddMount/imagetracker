@@ -433,6 +433,7 @@ HTML_TMPL = """<!DOCTYPE html>
 body{{font-family:-apple-system,sans-serif;background:#fafafa;color:#111;padding:24px}}
 h1{{font-size:1.5rem;margin-bottom:24px}}
 .grid{{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}}
+.ig-grid{{display:flex;flex-wrap:wrap;gap:12px;width:100%}}
 .card{{width:200px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.1)}}
 .img-wrap{{position:relative;overflow:hidden;background:#f0f0f0;aspect-ratio:1}}
 .img-wrap img{{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}}
