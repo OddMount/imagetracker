@@ -1,4 +1,4 @@
-from flask import Flask, send_file, request, jsonify, Response
+from flask import Flask, send_file, request, jsonify, Response, redirect
 import json, os, io, urllib.request, urllib.parse, html, re
 import requests as req
 from PIL import Image
@@ -177,6 +177,12 @@ def search_restaurant_serper(name):
 def index():
     return send_file('index.html')
 
+
+GITHUB_RAW = "https://raw.githubusercontent.com/OddMount/imagetracker/master/references/images"
+
+@app.route('/ref/images/<path:filename>')
+def ref_image(filename):
+    return redirect(f"{GITHUB_RAW}/{filename}", code=302)
 
 @app.route('/ref/<path:filename>')
 def reference(filename):
