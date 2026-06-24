@@ -5,8 +5,7 @@
     {
       "name": "카페 모호",
       "dir": "cafe_moho",
-      "type": ["instagram", "naver_place"],
-      "account": "cafe_moho",
+      "type": "naver_place",
       "naver_query": "양재천 카페 모호 서초구",
       "addr": "서울 서초구 양재천로7길 1",
       "color": "#4a3728",
