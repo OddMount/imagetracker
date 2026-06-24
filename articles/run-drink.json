@@ -1,0 +1,189 @@
+{
+  "slug": "run-drink",
+  "title": "달리고 마시자: 서울 런앤드링크 코스 5 (하퍼스바자 최노아)",
+  "spots": [
+    {
+      "name": "카페 모호",
+      "dir": "cafe_moho",
+      "type": ["instagram", "naver_place"],
+      "account": "moho_coffee_",
+      "naver_query": "양재천 카페 모호 서초구",
+      "addr": "서울 서초구 양재천로7길 1",
+      "color": "#4a3728",
+      "keywords": "커피 카페 외관 양재천"
+    },
+    {
+      "name": "누볼라 양재",
+      "dir": "nuvola_yangjae",
+      "type": ["instagram", "naver_place"],
+      "account": "nuvola_gelato",
+      "naver_query": "누볼라 양재 젤라또",
+      "addr": "서울 서초구 양재천로 117-8 2층",
+      "color": "#e8c87a",
+      "keywords": "젤라또 아이스크림 위스키 음료 외관"
+    },
+    {
+      "name": "악소",
+      "dir": "achso",
+      "type": ["instagram", "naver_place"],
+      "account": "achso_bakery",
+      "naver_query": "악소 양재천 독일베이커리",
+      "addr": "서울 서초구 양재천로19길 14 1층",
+      "color": "#7b5e3a",
+      "keywords": "빵 맥주 브런치 외관"
+    },
+    {
+      "name": "크레미엘",
+      "dir": "patisserie_cremiel",
+      "type": ["instagram", "naver_place"],
+      "account": "patisserie_cremiel",
+      "naver_query": "크레미엘 양재 프랑스베이커리",
+      "addr": "서울 서초구 양재천로21길 3",
+      "color": "#c9a96e",
+      "keywords": "크루아상 까눌레 빵 외관"
+    },
+    {
+      "name": "한양돈까스",
+      "dir": "hanyang_donkkaseu",
+      "type": "naver_place",
+      "naver_query": "한양돈까스 서초",
+      "addr": "서울 서초구",
+      "color": "#b5451b",
+      "keywords": "돈까스 치킨 맥주 음식"
+    },
+    {
+      "name": "브루어리 을를",
+      "dir": "brewery_eulreul",
+      "type": ["instagram", "naver_place"],
+      "account": "brewery.eulreul.seoulforest",
+      "naver_query": "브루어리 을를 서울숲 탭룸",
+      "addr": "서울 성동구",
+      "color": "#2a4a2a",
+      "keywords": "수제맥주 피쉬앤칩스 맥주 외관"
+    },
+    {
+      "name": "백두대간",
+      "dir": "baekdudaegan",
+      "type": "naver_place",
+      "naver_query": "백두대간 성수동 호프",
+      "addr": "서울 성동구 성수동",
+      "color": "#3a3a3a",
+      "keywords": "통닭 소시지 맥주 호프 음식"
+    },
+    {
+      "name": "노유",
+      "dir": "noyu_wine",
+      "type": ["instagram", "naver_place"],
+      "account": "noyu_letsdrink",
+      "naver_query": "노유 자양동 와인바",
+      "addr": "서울 광진구 자양동",
+      "color": "#6b3a5a",
+      "keywords": "와인 음식 안주 외관"
+    },
+    {
+      "name": "바틀링",
+      "dir": "bottling_bar",
+      "type": "naver_place",
+      "naver_query": "바틀링 광진구 수제맥주",
+      "addr": "서울 광진구",
+      "color": "#1a3a5c",
+      "keywords": "맥주 수제맥주 탭 외관"
+    },
+    {
+      "name": "흙과 나무",
+      "dir": "heukgwa_namu",
+      "type": ["instagram", "naver_place"],
+      "account": "tree024617759",
+      "naver_query": "흙과 나무 성수 성동구 전통주",
+      "addr": "서울 성동구 성덕정17길 11",
+      "color": "#5a4a2a",
+      "keywords": "막걸리 동동주 파전 음식 외관"
+    },
+    {
+      "name": "한신치킨호프",
+      "dir": "hanshin_chicken",
+      "type": "naver_place",
+      "naver_query": "한신치킨호프 고속터미널",
+      "addr": "서울 서초구 고속터미널",
+      "color": "#c41a1a",
+      "keywords": "치킨 맥주 야장 음식"
+    },
+    {
+      "name": "탄주 고속터미널점",
+      "dir": "tanjyu",
+      "type": ["instagram", "naver_place"],
+      "account": "tanjyu_official",
+      "naver_query": "탄주 고속터미널 야키토리",
+      "addr": "서울 서초구 신반포로 165 반포쇼핑타운 2동 B1F",
+      "color": "#1a1a2e",
+      "keywords": "야키토리 맥주 아사히 생맥 재즈 외관"
+    },
+    {
+      "name": "가프",
+      "dir": "kgaff",
+      "type": ["instagram", "naver_place"],
+      "account": "kgaff.space",
+      "naver_query": "가프 내방역 카페바",
+      "addr": "서울 서초구 서초대로34길 13",
+      "color": "#2d2d2d",
+      "keywords": "카페 맥주 바 외관 공간"
+    },
+    {
+      "name": "아리수포차",
+      "dir": "arisu_pocha",
+      "type": "naver_place",
+      "naver_query": "아리수포차 서초 반포쇼핑타운",
+      "addr": "서울 서초구 신반포로 205 반포쇼핑타운6동 지하3호",
+      "color": "#8b2a2a",
+      "keywords": "제육볶음 포차 음식 안주"
+    },
+    {
+      "name": "라뚜셩트",
+      "dir": "la_touchante",
+      "type": ["instagram", "naver_place"],
+      "account": "la_touchante",
+      "naver_query": "라뚜셩트 방배 빙수 디저트",
+      "addr": "서울 서초구 방배동 856-32 1층",
+      "color": "#d4a0c0",
+      "keywords": "빙수 케이크 디저트 외관"
+    },
+    {
+      "name": "어메이징 피자",
+      "dir": "amazing_pizza",
+      "type": "naver_place",
+      "naver_query": "어메이징피자 마곡나루",
+      "addr": "서울 강서구 마곡서로 168 럭스나인 오피스텔 L동 202호",
+      "color": "#c44a1a",
+      "keywords": "피자 치즈 맥주 음식"
+    },
+    {
+      "name": "솜씨",
+      "dir": "somssi",
+      "type": "naver_place",
+      "naver_query": "솜씨 마곡 이자카야 사시미",
+      "addr": "서울 강서구 마곡",
+      "color": "#1a3a4a",
+      "keywords": "사시미 사케 이자카야 음식"
+    },
+    {
+      "name": "바틀리스트",
+      "dir": "bottlelist",
+      "type": ["instagram", "naver_place"],
+      "account": "bottlelist_",
+      "naver_query": "바틀리스트 마곡 주류편집샵",
+      "addr": "서울 강서구 강서로 433 마곡오드카운티2차 116호",
+      "color": "#2a2a4a",
+      "keywords": "와인 맥주 막걸리 외관 야장"
+    },
+    {
+      "name": "떼헤브",
+      "dir": "tes_reves",
+      "type": ["instagram", "naver_place"],
+      "account": "tes.reves.seoul",
+      "naver_query": "떼헤브 마곡 디저트",
+      "addr": "서울 강서구 마곡서로 175 상가동 102호",
+      "color": "#c9b0d0",
+      "keywords": "디저트 케이크 빙수 외관"
+    }
+  ]
+}
