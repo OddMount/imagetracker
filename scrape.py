@@ -65,15 +65,22 @@ def ig_login(force=False):
     return L.context._session
 
 
-def ig_fetch_posts(session, account, max_posts=50):
+def ig_fetch_profile(session, account, max_posts=50):
+    """프로필 + 포스트 한번에 가져오기. bio 검증용 메타도 반환."""
     r = session.get(
         f"https://www.instagram.com/api/v1/users/web_profile_info/?username={account}",
         headers=IG_HEADERS, timeout=15
     )
     if r.status_code != 200:
         print(f"  프로필 API 실패: {r.status_code}")
-        return {}
-    edges = r.json()["data"]["user"]["edge_owner_to_timeline_media"]["edges"]
+        return None, {}
+    user = r.json()["data"]["user"]
+    meta = {
+        "full_name": user.get("full_name", ""),
+        "biography": user.get("biography", ""),
+        "is_private": user.get("is_private", False),
+    }
+    edges = user.get("edge_owner_to_timeline_media", {}).get("edges", [])
     posts = {}
     for edge in edges[:max_posts]:
         node = edge["node"]
@@ -88,7 +95,32 @@ def ig_fetch_posts(session, account, max_posts=50):
             "img_url": img_url,
             "caption": cap_edges[0]["node"]["text"] if cap_edges else "",
         }
+    return meta, posts
+
+
+def ig_fetch_posts(session, account, max_posts=50):
+    _, posts = ig_fetch_profile(session, account, max_posts)
     return posts
+
+
+def verify_account(meta, spot):
+    """bio에 addr 키워드가 하나라도 포함되면 통과. 없으면 경고."""
+    if not meta:
+        return
+    addr = spot.get("addr", "")
+    bio = (meta.get("biography", "") + " " + meta.get("full_name", "")).lower()
+    # 주소에서 의미있는 단어 추출 (구/동/로 단위)
+    import re
+    addr_words = re.findall(r'[가-힣]{2,}', addr)
+    # 서울, 구, 동, 로 이름 중 bio에 있으면 OK
+    matches = [w for w in addr_words if len(w) >= 3 and w in bio]
+    name = spot.get("name", "")
+    acct = spot.get("account", "")
+    if matches:
+        print(f"  ✅ bio 검증 통과: {matches[0]} 포함됨")
+    else:
+        print(f"  ⚠️  bio에 주소 키워드 없음 — 계정이 맞는지 확인 필요")
+        print(f"     계정: @{acct}  |  이름: {meta.get('full_name')}  |  bio: {meta.get('biography', '')[:60]}")
 
 
 def scrape_instagram(spot, slug, ig_session):
@@ -102,7 +134,8 @@ def scrape_instagram(spot, slug, ig_session):
 
     print(f"  @{account} 스크래핑...")
     try:
-        feed = ig_fetch_posts(ig_session, account)
+        meta, feed = ig_fetch_profile(ig_session, account)
+        verify_account(meta, spot)
         if not feed:
             return []
         scored = []
