@@ -124,6 +124,7 @@ def scrape_instagram(spot, slug, ig_session):
                 print(f"    [{tag}] {sc}")
                 saved.append({"path": str(filepath), "post_id": sc,
                               "post_url": f"https://www.instagram.com/p/{sc}/"})
+                time.sleep(0.5)  # 이미지 다운로드 사이 0.5초
             except Exception as e:
                 print(f"    다운로드 실패 {sc}: {e}")
         return saved
@@ -514,12 +515,12 @@ def main():
         if "instagram" in types and ig_session:
             result = scrape_instagram(spot, slug, ig_session)
             all_saved[dir_name]["instagram"] = result
-            time.sleep(1)
+            time.sleep(5)  # rate-limit 방지: 계정 사이 5초
 
         if "naver_place" in types:
             result = scrape_naver(spot, slug)
             all_saved[dir_name]["naver"] = result
-            time.sleep(2)
+            time.sleep(3)
 
         if "google_images" in types:
             result = scrape_google_images(spot, slug)
