@@ -76,6 +76,7 @@
       "type": ["instagram", "naver_place"],
       "account": "noyu_letsdrink",
       "naver_query": "노유 자양동 와인바",
+      "account_verified": true,
       "addr": "서울 광진구 자양동",
       "color": "#6b3a5a",
       "keywords": "와인 음식 안주 외관"
@@ -159,7 +160,8 @@
     {
       "name": "솜씨",
       "dir": "somssi",
-      "type": "naver_place",
+      "type": ["instagram", "naver_place"],
+      "account": "Somesee175",
       "naver_query": "솜씨 마곡 이자카야 사시미",
       "addr": "서울 강서구 마곡",
       "color": "#1a3a4a",
