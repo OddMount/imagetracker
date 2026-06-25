@@ -1,0 +1,56 @@
+{
+  "slug": "curry",
+  "title": "평범한 카레는 없다, 서울 카레 맛집 5",
+  "spots": [
+    {
+      "name": "커리하우스 라사",
+      "dir": "rasa_seoul",
+      "type": ["instagram", "naver_place"],
+      "account": "rasa_seoul",
+      "naver_query": "합정 커리하우스 라사",
+      "addr": "서울 마포구 포은로2가길 6 B102호",
+      "color": "#3d1f00",
+      "keywords": "커리 카레 향신료 파니르 라사오리지날"
+    },
+    {
+      "name": "스카프",
+      "dir": "scarf_bar",
+      "type": ["instagram", "naver_place"],
+      "account": "scarf.scarf.scarf.scarf.scarf",
+      "naver_query": "스카프 성수 칵테일",
+      "addr": "서울 성동구 성덕정19길 10 1층",
+      "color": "#1a1a2e",
+      "keywords": "카레 커리 칵테일 미소 키마 위스키"
+    },
+    {
+      "name": "카타코토",
+      "dir": "katacotocafe",
+      "type": ["instagram", "naver_place"],
+      "account": "katacotocafe",
+      "naver_query": "합정 카타코토카페",
+      "addr": "서울 마포구 동교로 148-6 지층",
+      "color": "#2d1b00",
+      "keywords": "카레 커리 모야시 시금치 새우 토마토"
+    },
+    {
+      "name": "심두 쿠키바",
+      "dir": "simdelung",
+      "type": ["instagram", "naver_place"],
+      "account": "simdelung_cookiebar",
+      "naver_query": "심두 서대문",
+      "addr": "서울 서대문구 홍연길 82 2층 202호",
+      "color": "#6b1a00",
+      "keywords": "마라 커리 크림카레 쿠키 춘권"
+    },
+    {
+      "name": "정거장 뒤",
+      "dir": "busto0op",
+      "type": ["instagram", "naver_place"],
+      "account": "busto0op",
+      "naver_query": "응암동 정거장뒤 카레",
+      "addr": "서울 은평구 응암로 12길 21",
+      "color": "#1a3320",
+      "keywords": "크림카레 카레 커리 채소 눈사람"
+    }
+  ]
+}
