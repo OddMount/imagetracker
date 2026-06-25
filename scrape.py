@@ -459,15 +459,10 @@ def scrape_kakao(spot, slug):
         print("    place_id 없음, 스킵")
         return []
 
+    # 업체 제공 사진 CDN 패턴 (리뷰/블로그 제외)
+    KAKAO_OFFICIAL_CDN = ["fiy_reboot/place/", "mystore/"]
+    place_url = f"https://place.map.kakao.com/{place_id}"
     image_urls = []
-    place_url  = f"https://place.map.kakao.com/{place_id}"
-
-    def on_response(response):
-        url = response.url
-        # Kakao 업체 제공 사진 CDN 패턴
-        if "kakaocdn.net/dn" in url and any(url.endswith(x) for x in [".jpg", ".jpeg", ".png", ".webp"]):
-            if url not in image_urls:
-                image_urls.append(url)
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -476,30 +471,33 @@ def scrape_kakao(spot, slug):
             viewport={"width": 390, "height": 844},
             extra_http_headers={"Accept-Language": "ko-KR,ko;q=0.9"},
         )
-        page.on("response", on_response)
-
         try:
             page.goto(place_url, wait_until="networkidle", timeout=25000)
             page.wait_for_timeout(2000)
-            # 사진 탭 찾아서 클릭
-            for selector in ["a[href*='photo']", "a:has-text('사진')", "[class*='photo']"]:
-                try:
-                    el = page.query_selector(selector)
-                    if el:
-                        el.click()
-                        page.wait_for_timeout(2000)
-                        break
-                except Exception:
-                    pass
-            # 스크롤로 이미지 로드
-            for _ in range(10):
-                page.evaluate("window.scrollBy(0, 600)")
-                page.wait_for_timeout(400)
+            for _ in range(15):
+                page.evaluate("window.scrollBy(0, 400)")
+                page.wait_for_timeout(300)
+            # img src에서 fname 파라미터 디코딩 → 업체 제공 CDN만 필터
+            srcs = page.eval_on_selector_all(
+                "img[src*='img1.kakaocdn.net']",
+                "els => els.map(e => e.src)"
+            )
+            seen = set()
+            for src in srcs:
+                parsed = urllib.parse.urlparse(src)
+                params = urllib.parse.parse_qs(parsed.query)
+                fname = params.get("fname", [""])[0]
+                if not fname:
+                    continue
+                decoded = urllib.parse.unquote(fname)
+                if any(cdn in decoded for cdn in KAKAO_OFFICIAL_CDN) and decoded not in seen:
+                    seen.add(decoded)
+                    image_urls.append(decoded)
         except Exception as e:
             print(f"    페이지 로드 실패: {e}")
         browser.close()
 
-    print(f"    이미지 URL {len(image_urls)}개 수집")
+    print(f"    업체제공 이미지 {len(image_urls)}개 수집")
     dl_headers = {"User-Agent": MOBILE_UA, "Referer": "https://place.map.kakao.com/"}
     saved = []
     for idx, src in enumerate(image_urls[:MAX_NAVER]):
