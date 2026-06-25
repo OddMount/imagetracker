@@ -134,6 +134,7 @@
       "dir": "arisu_pocha",
       "type": "naver_place",
       "naver_query": "아리수포차 서초 반포쇼핑타운",
+      "naver_place_id": "1079495568",
       "addr": "서울 서초구 신반포로 205 반포쇼핑타운6동 지하3호",
       "color": "#8b2a2a",
       "keywords": "제육볶음 포차 음식 안주"
