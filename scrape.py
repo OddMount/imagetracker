@@ -6,10 +6,12 @@
 """
 
 import sys
+import os
 import json
 import re
 import io
 import time
+import random
 import getpass
 import urllib.parse
 import requests
@@ -21,7 +23,7 @@ from playwright.sync_api import sync_playwright
 # ── 설정 ─────────────────────────────────────────────────────────
 
 SESSION_DIR = Path.home() / ".config" / "instaloader"
-MAX_IG      = 15    # 인스타 최대 수집
+MAX_IG      = 20    # 인스타 최대 수집
 MAX_NAVER   = 12    # 네이버 최대 수집
 MIN_SIZE    = 100_000  # 네이버 썸네일 제외 기준 (100KB)
 
@@ -65,8 +67,8 @@ def ig_login(force=False):
     return L.context._session
 
 
-def ig_fetch_profile(session, account, max_posts=50):
-    """프로필 + 포스트 한번에 가져오기. bio 검증용 메타도 반환."""
+def ig_fetch_profile(session, account, max_posts=100):
+    """프로필 + 포스트 가져오기. 첫 페이지 후 instaloader로 페이지네이션."""
     r = session.get(
         f"https://www.instagram.com/api/v1/users/web_profile_info/?username={account}",
         headers=IG_HEADERS, timeout=15
@@ -74,27 +76,66 @@ def ig_fetch_profile(session, account, max_posts=50):
     if r.status_code != 200:
         print(f"  프로필 API 실패: {r.status_code}")
         return None, {}
-    user = r.json()["data"]["user"]
+    data = r.json()
+    if "data" not in data or not data["data"].get("user"):
+        return None, {}
+    user = data["data"]["user"]
     meta = {
         "full_name": user.get("full_name", ""),
         "biography": user.get("biography", ""),
         "is_private": user.get("is_private", False),
     }
-    edges = user.get("edge_owner_to_timeline_media", {}).get("edges", [])
-    posts = {}
-    for edge in edges[:max_posts]:
-        node = edge["node"]
-        sc = node["shortcode"]
-        if node.get("__typename") == "GraphSidecar":
-            children = node.get("edge_sidecar_to_children", {}).get("edges", [])
-            img_url = children[0]["node"]["display_url"] if children else node["display_url"]
-        else:
-            img_url = node["display_url"]
-        cap_edges = node.get("edge_media_to_caption", {}).get("edges", [])
-        posts[sc] = {
-            "img_url": img_url,
-            "caption": cap_edges[0]["node"]["text"] if cap_edges else "",
-        }
+
+    def parse_edges(edges):
+        out = {}
+        for edge in edges:
+            node = edge["node"]
+            sc = node["shortcode"]
+            if node.get("__typename") == "GraphSidecar":
+                children = node.get("edge_sidecar_to_children", {}).get("edges", [])
+                img_url = children[0]["node"]["display_url"] if children else node["display_url"]
+            else:
+                img_url = node["display_url"]
+            cap_edges = node.get("edge_media_to_caption", {}).get("edges", [])
+            out[sc] = {
+                "img_url": img_url,
+                "caption": cap_edges[0]["node"]["text"] if cap_edges else "",
+            }
+        return out
+
+    media = user.get("edge_owner_to_timeline_media", {})
+    posts = parse_edges(media.get("edges", []))
+    page_info = media.get("page_info", {})
+    user_id = user.get("id", "")
+
+    # 페이지네이션: max_posts에 도달하거나 다음 페이지 없을 때까지
+    while len(posts) < max_posts and page_info.get("has_next_page") and user_id:
+        cursor = page_info.get("end_cursor", "")
+        if not cursor:
+            break
+        try:
+            time.sleep(random.uniform(2, 4))
+            r2 = session.get(
+                "https://www.instagram.com/graphql/query/",
+                params={
+                    "query_hash": "e769aa130647d2354c40ea6a439bfc08",
+                    "variables": json.dumps({"id": user_id, "first": 12, "after": cursor}),
+                },
+                headers=IG_HEADERS, timeout=15
+            )
+            if r2.status_code != 200:
+                break
+            page_data = r2.json()
+            media2 = page_data.get("data", {}).get("user", {}).get("edge_owner_to_timeline_media", {})
+            new_edges = media2.get("edges", [])
+            if not new_edges:
+                break
+            posts.update(parse_edges(new_edges))
+            page_info = media2.get("page_info", {})
+        except Exception:
+            break
+
+    print(f"  총 {len(posts)}개 포스트 수집")
     return meta, posts
 
 
@@ -157,7 +198,7 @@ def scrape_instagram(spot, slug, ig_session):
                 print(f"    [{tag}] {sc}")
                 saved.append({"path": str(filepath), "post_id": sc,
                               "post_url": f"https://www.instagram.com/p/{sc}/"})
-                time.sleep(0.5)  # 이미지 다운로드 사이 0.5초
+                time.sleep(random.uniform(0.8, 1.5))  # 이미지 다운로드 사이
             except Exception as e:
                 print(f"    다운로드 실패 {sc}: {e}")
         return saved
@@ -196,7 +237,7 @@ def scrape_naver(spot, slug):
         f.unlink()
 
     print(f"  네이버 플레이스: {spot['name']}")
-    place_id = get_place_id(query)
+    place_id = spot.get("naver_place_id") or get_place_id(query)
     if not place_id:
         return []
 
@@ -213,11 +254,8 @@ def scrape_naver(spot, slug):
             if "ldb-phinf" in src and src not in business_urls:
                 business_urls.append(src)
 
-    candidates = [
-        f"https://m.place.naver.com/restaurant/{place_id}/photo/business",
-        f"https://m.place.naver.com/cafe/{place_id}/photo/business",
-        f"https://m.place.naver.com/place/{place_id}/photo/business",
-    ]
+    tab_suffixes = ["photo/business", "photo/menu"]
+    place_types  = ["restaurant", "cafe", "place"]
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -229,20 +267,24 @@ def scrape_naver(spot, slug):
         page.on("response", on_response)
 
         success = False
-        used_url = candidates[0]
-        for url in candidates:
-            page.goto(url, wait_until="load", timeout=20000)
-            page.wait_for_timeout(2000)
-            title = page.title()
-            if "찾을 수 없" not in title and "없는 페이지" not in title:
-                used_url = url
-                success = True
-                break
-
-        if success:
-            for _ in range(8):
-                page.evaluate("window.scrollBy(0, 600)")
-                page.wait_for_timeout(600)
+        used_url = ""
+        for tab in tab_suffixes:
+            for ptype in place_types:
+                url = f"https://m.place.naver.com/{ptype}/{place_id}/{tab}"
+                try:
+                    page.goto(url, wait_until="load", timeout=20000)
+                    page.wait_for_timeout(1500)
+                    title = page.title()
+                    if "찾을 수 없" not in title and "없는 페이지" not in title:
+                        if not used_url:
+                            used_url = url
+                        success = True
+                        for _ in range(8):
+                            page.evaluate("window.scrollBy(0, 600)")
+                            page.wait_for_timeout(500)
+                        break
+                except Exception:
+                    continue
 
         browser.close()
 
@@ -373,6 +415,109 @@ def scrape_manual(spot, slug):
     return saved
 
 
+# ── 카카오맵 ─────────────────────────────────────────────────────
+
+KAKAO_KEY = "267d778c8ded2bf38f5adf46b62c0798"  # Jarvis 앱 REST API 키
+
+def get_kakao_key():
+    return os.environ.get("KAKAO_REST_KEY", KAKAO_KEY)
+
+def get_kakao_place_id(query):
+    key = get_kakao_key()
+    if not key:
+        return None
+    try:
+        r = requests.get(
+            "https://dapi.kakao.com/v2/local/search/keyword.json",
+            params={"query": query, "size": 3},
+            headers={"Authorization": f"KakaoAK {key}"},
+            timeout=10
+        )
+        if not r.ok:
+            print(f"    카카오 API 실패: {r.status_code} {r.text[:80]}")
+            return None
+        docs = r.json().get("documents", [])
+        if docs:
+            print(f"    kakao_id: {docs[0]['id']} ({docs[0]['place_name']})")
+            return docs[0]["id"]
+    except Exception as e:
+        print(f"    카카오 place_id 검색 실패: {e}")
+    return None
+
+
+def scrape_kakao(spot, slug):
+    query    = spot.get("naver_query", spot["name"])
+    dir_name = spot["dir"]
+    dest = Path(f"references/images/{slug}/{dir_name}/kakao")
+    dest.mkdir(parents=True, exist_ok=True)
+    for f in dest.glob("kakao_*.jpg"):
+        f.unlink()
+
+    print(f"  카카오맵: {spot['name']}")
+    place_id = spot.get("kakao_place_id") or get_kakao_place_id(query)
+    if not place_id:
+        print("    place_id 없음, 스킵")
+        return []
+
+    image_urls = []
+    place_url  = f"https://place.map.kakao.com/{place_id}"
+
+    def on_response(response):
+        url = response.url
+        # Kakao 업체 제공 사진 CDN 패턴
+        if "kakaocdn.net/dn" in url and any(url.endswith(x) for x in [".jpg", ".jpeg", ".png", ".webp"]):
+            if url not in image_urls:
+                image_urls.append(url)
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(
+            user_agent=MOBILE_UA,
+            viewport={"width": 390, "height": 844},
+            extra_http_headers={"Accept-Language": "ko-KR,ko;q=0.9"},
+        )
+        page.on("response", on_response)
+
+        try:
+            page.goto(place_url, wait_until="networkidle", timeout=25000)
+            page.wait_for_timeout(2000)
+            # 사진 탭 찾아서 클릭
+            for selector in ["a[href*='photo']", "a:has-text('사진')", "[class*='photo']"]:
+                try:
+                    el = page.query_selector(selector)
+                    if el:
+                        el.click()
+                        page.wait_for_timeout(2000)
+                        break
+                except Exception:
+                    pass
+            # 스크롤로 이미지 로드
+            for _ in range(10):
+                page.evaluate("window.scrollBy(0, 600)")
+                page.wait_for_timeout(400)
+        except Exception as e:
+            print(f"    페이지 로드 실패: {e}")
+        browser.close()
+
+    print(f"    이미지 URL {len(image_urls)}개 수집")
+    dl_headers = {"User-Agent": MOBILE_UA, "Referer": "https://place.map.kakao.com/"}
+    saved = []
+    for idx, src in enumerate(image_urls[:MAX_NAVER]):
+        try:
+            r = requests.get(src, headers=dl_headers, timeout=15)
+            r.raise_for_status()
+            if len(r.content) < MIN_SIZE:
+                continue
+            fname = dest / f"kakao_{idx:02d}.jpg"
+            fname.write_bytes(r.content)
+            saved.append({"path": str(fname), "src_url": src, "kakao_url": place_url, "dir": dir_name})
+            print(f"    저장: {fname.name} ({len(r.content)//1024}KB)")
+        except Exception as e:
+            print(f"    다운로드 실패: {e}")
+
+    return saved
+
+
 # ── HTML 생성/업데이트 ────────────────────────────────────────────
 
 def card_ig(item, spot, slug):
@@ -429,6 +574,23 @@ def card_google(item, spot, slug):
 </div>"""
 
 
+def card_kakao(item, spot, slug):
+    dir_name = spot["dir"]
+    fname    = Path(item["path"]).name
+    web_path = f"/ref/images/{slug}/{dir_name}/kakao/{fname}"
+    return f"""<div class="card kakao-card">
+  <div class="img-wrap">
+    <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
+    <span class="badge" style="background:#ffcd00;color:#3c1e1e">카카오</span>
+    <a class="dl-btn" href="{web_path}" download="{dir_name}_{fname}">⬇ JPG</a>
+  </div>
+  <div class="meta">
+    <p class="attr">사진/ 업체제공 (카카오맵)</p>
+    <a class="src" href="{item['kakao_url']}" target="_blank">출처 확인 →</a>
+  </div>
+</div>"""
+
+
 def card_manual(item, spot, slug):
     dir_name = spot["dir"]
     fname    = Path(item["path"]).name
@@ -452,6 +614,7 @@ SECTION_TMPL = """<section id="sec-{dir}" style="border-top:3px solid {color};pa
   <div class="grid">
     <div class="ig-grid ig-{dir}">{ig_cards}</div>
     <div class="ig-grid naver-grid naver-{dir}">{naver_cards}</div>
+    <div class="ig-grid kakao-grid kakao-{dir}">{kakao_cards}</div>
     <div class="ig-grid manual-grid manual-{dir}">{manual_cards}</div>
   </div>
 </section>"""
@@ -496,6 +659,7 @@ def build_html(config, all_saved, slug):
 
         ig_cards     = "".join(card_ig(i, spot, slug)     for i in saved.get("instagram", []))
         naver_cards  = "".join(card_naver(i, spot, slug)  for i in saved.get("naver", []))
+        kakao_cards  = "".join(card_kakao(i, spot, slug)  for i in saved.get("kakao", []))
         google_cards = "".join(card_google(i, spot, slug) for i in saved.get("google", []))
         manual_cards = "".join(card_manual(i, spot, slug) for i in saved.get("manual", []))
 
@@ -506,6 +670,7 @@ def build_html(config, all_saved, slug):
             addr=spot.get("addr", ""),
             ig_cards=ig_cards,
             naver_cards=naver_cards + google_cards,
+            kakao_cards=kakao_cards,
             manual_cards=manual_cards,
         ))
 
@@ -521,19 +686,31 @@ def main():
         print("사용법: python3 scrape.py {slug} [--login]")
         sys.exit(1)
 
-    slug       = sys.argv[1]
+    slug        = sys.argv[1]
     force_login = "--login" in sys.argv
-    config     = load_config(slug)
+    kakao_only  = "--kakao-only" in sys.argv
+    config      = load_config(slug)
 
-    # 인스타 필요 여부 확인
-    needs_ig = any(
+    # 인스타 필요 여부 확인 (kakao-only면 스킵)
+    needs_ig = not kakao_only and any(
         "instagram" in (s.get("type") if isinstance(s.get("type"), list) else [s.get("type", "")])
         or s.get("type") == "instagram"
         for s in config["spots"]
     )
     ig_session = ig_login(force=force_login) if needs_ig else None
 
+    # kakao-only 모드면 기존 이미지 유지하며 all_saved 초기화
     all_saved = {}
+    if kakao_only:
+        print("카카오 전용 모드 — 기존 인스타/네이버 이미지 유지")
+        for spot in config["spots"]:
+            d = spot["dir"]
+            all_saved[d] = {"instagram": [], "naver": [], "kakao": [], "google": [], "manual": []}
+            for sc in Path(f"references/images/{slug}/{d}").glob("*.jpg"):
+                all_saved[d]["instagram"].append({"path": str(sc), "post_id": sc.stem,
+                                                   "post_url": f"https://www.instagram.com/p/{sc.stem}/"})
+            for nf in Path(f"references/images/{slug}/{d}/naver").glob("naver_*.jpg"):
+                all_saved[d]["naver"].append({"path": str(nf), "src_url": "", "naver_url": "", "dir": d})
 
     for spot in config["spots"]:
         dir_name = spot["dir"]
@@ -543,17 +720,25 @@ def main():
 
         print(f"\n{'─'*40}")
         print(f"{spot['name']}")
-        all_saved[dir_name] = {}
+        if not kakao_only:
+            all_saved[dir_name] = {}
 
-        if "instagram" in types and ig_session:
+        if not kakao_only and "instagram" in types and ig_session:
             result = scrape_instagram(spot, slug, ig_session)
             all_saved[dir_name]["instagram"] = result
-            time.sleep(5)  # rate-limit 방지: 계정 사이 5초
+            delay = random.uniform(18, 28)
+            print(f"  ⏳ 다음 계정까지 {delay:.0f}초 대기...")
+            time.sleep(delay)
 
-        if "naver_place" in types:
+        if not kakao_only and "naver_place" in types:
             result = scrape_naver(spot, slug)
             all_saved[dir_name]["naver"] = result
             time.sleep(3)
+
+        if "naver_place" in types or "kakao_place" in types:
+            result = scrape_kakao(spot, slug)
+            all_saved[dir_name]["kakao"] = result
+            time.sleep(2)
 
         if "google_images" in types:
             result = scrape_google_images(spot, slug)
@@ -572,9 +757,10 @@ def main():
         d = all_saved.get(spot["dir"], {})
         ig_n  = len(d.get("instagram", []))
         nav_n = len(d.get("naver", []))
+        kak_n = len(d.get("kakao", []))
         goo_n = len(d.get("google", []))
         man_n = len(d.get("manual", []))
-        print(f"  {spot['name']}: IG {ig_n}장 / 네이버 {nav_n}장 / Google {goo_n}장 / manual {man_n}장")
+        print(f"  {spot['name']}: IG {ig_n}장 / 네이버 {nav_n}장 / 카카오 {kak_n}장 / Google {goo_n}장 / manual {man_n}장")
 
     build_html(config, all_saved, slug)
 
