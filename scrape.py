@@ -455,6 +455,9 @@ def scrape_kakao(spot, slug):
 
     print(f"  카카오맵: {spot['name']}")
     place_id = spot.get("kakao_place_id") or get_kakao_place_id(query)
+    if not place_id and query != spot["name"]:
+        print(f"    naver_query로 실패, 업체명만으로 재시도: {spot['name']}")
+        place_id = get_kakao_place_id(spot["name"])
     if not place_id:
         print("    place_id 없음, 스킵")
         return []
@@ -518,6 +521,14 @@ def scrape_kakao(spot, slug):
 
 # ── HTML 생성/업데이트 ────────────────────────────────────────────
 
+GITHUB_RAW = "https://raw.githubusercontent.com/OddMount/imagetracker/master/references/images"
+
+def _dl_url(web_path, dl_name):
+    """GitHub raw는 크로스오리진 → download 속성 무시. /api/download 프록시로 우회."""
+    import urllib.parse as _up
+    raw = GITHUB_RAW + web_path.replace("/ref/images", "")
+    return f"/api/download?url={_up.quote(raw, safe='')}&filename={_up.quote(dl_name, safe='')}"
+
 def card_ig(item, spot, slug):
     post_id  = item["post_id"]
     dir_name = spot["dir"]
@@ -527,7 +538,7 @@ def card_ig(item, spot, slug):
   <div class="img-wrap">
     <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
     <span class="badge" style="background:#e1306c">Instagram</span>
-    <a class="dl-btn" href="{web_path}" download="{dir_name}_{post_id}.jpg">⬇ JPG</a>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{post_id}')}">⬇ JPG</a>
   </div>
   <div class="meta">
     <p class="attr">사진/ @{account}</p>
@@ -544,7 +555,7 @@ def card_naver(item, spot, slug):
   <div class="img-wrap">
     <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
     <span class="badge" style="background:#03c75a">네이버</span>
-    <a class="dl-btn" href="{web_path}" download="{dir_name}_{fname}">⬇ JPG</a>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ JPG</a>
   </div>
   <div class="meta">
     <p class="attr">사진/ 업체제공 (네이버 플레이스)</p>
@@ -580,7 +591,7 @@ def card_kakao(item, spot, slug):
   <div class="img-wrap">
     <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
     <span class="badge" style="background:#ffcd00;color:#3c1e1e">카카오</span>
-    <a class="dl-btn" href="{web_path}" download="{dir_name}_{fname}">⬇ JPG</a>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ JPG</a>
   </div>
   <div class="meta">
     <p class="attr">사진/ 업체제공 (카카오맵)</p>
