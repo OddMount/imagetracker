@@ -57,6 +57,7 @@
       "type": ["instagram", "naver_place"],
       "account": "brewery.eulreul.seoulforest",
       "naver_query": "브루어리 을를 서울숲 탭룸",
+      "kakao_place_id": "894670615",
       "addr": "서울 성동구",
       "color": "#2a4a2a",
       "keywords": "수제맥주 피쉬앤칩스 맥주 외관"
@@ -164,6 +165,7 @@
       "type": ["instagram", "naver_place"],
       "account": "Somesee175",
       "naver_query": "솜씨 마곡 이자카야 사시미",
+      "kakao_place_id": "1879368422",
       "addr": "서울 강서구 마곡",
       "color": "#1a3a4a",
       "keywords": "사시미 사케 이자카야 음식"

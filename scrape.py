@@ -462,42 +462,45 @@ def scrape_kakao(spot, slug):
         print("    place_id 없음, 스킵")
         return []
 
-    # 업체 제공 사진 CDN 패턴 (리뷰/블로그 제외)
-    KAKAO_OFFICIAL_CDN = ["fiy_reboot/place/", "mystore/"]
+    # place-api.map.kakao.com/places/tab/photos → type:POI(업체등록) + type:MYSTORE(업체직접업로드)만 수집
+    KAKAO_OFFICIAL_TYPES = {"POI", "MYSTORE"}
     place_url = f"https://place.map.kakao.com/{place_id}"
     image_urls = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page(
+        context = browser.new_context(
             user_agent=MOBILE_UA,
             viewport={"width": 390, "height": 844},
             extra_http_headers={"Accept-Language": "ko-KR,ko;q=0.9"},
         )
+        page = context.new_page()
+        seen = set()
+
+        def handle_tab_photos(response):
+            if f"tab/photos/{place_id}" not in response.url:
+                return
+            try:
+                data = response.json()
+                for ph in data.get("photos", []):
+                    if ph.get("type") in KAKAO_OFFICIAL_TYPES:
+                        url = ph.get("url", "")
+                        if url and url not in seen:
+                            seen.add(url)
+                            image_urls.append(url)
+            except Exception:
+                pass
+
+        page.on("response", handle_tab_photos)
         try:
             page.goto(place_url, wait_until="networkidle", timeout=25000)
             page.wait_for_timeout(2000)
-            for _ in range(15):
-                page.evaluate("window.scrollBy(0, 400)")
-                page.wait_for_timeout(300)
-            # img src에서 fname 파라미터 디코딩 → 업체 제공 CDN만 필터
-            srcs = page.eval_on_selector_all(
-                "img[src*='img1.kakaocdn.net']",
-                "els => els.map(e => e.src)"
-            )
-            seen = set()
-            for src in srcs:
-                parsed = urllib.parse.urlparse(src)
-                params = urllib.parse.parse_qs(parsed.query)
-                fname = params.get("fname", [""])[0]
-                if not fname:
-                    continue
-                decoded = urllib.parse.unquote(fname)
-                if any(cdn in decoded for cdn in KAKAO_OFFICIAL_CDN) and decoded not in seen:
-                    seen.add(decoded)
-                    image_urls.append(decoded)
+            # 사진 탭 클릭 → tab/photos API 호출 트리거
+            page.click("text=사진", timeout=5000)
+            page.wait_for_timeout(2000)
         except Exception as e:
-            print(f"    페이지 로드 실패: {e}")
+            print(f"    로드/클릭 실패: {e}")
+        context.close()
         browser.close()
 
     print(f"    업체제공 이미지 {len(image_urls)}개 수집")
