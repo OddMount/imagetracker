@@ -1,0 +1,81 @@
+{
+  "slug": "kongguksu",
+  "title": "여름 콩국수·팥죽 리스트 8곳 (하퍼스바자 최노아)",
+  "spots": [
+    {
+      "name": "신당동천팥죽",
+      "dir": "sindang_cheon_patjuk",
+      "type": "naver_place",
+      "naver_query": "신당동천팥죽 중구 팥죽",
+      "addr": "서울 중구 다산로44길 33",
+      "color": "#7a2e2e",
+      "keywords": "팥죽 팥칼국수 콩국수 간판 외관"
+    },
+    {
+      "name": "충무칼국수",
+      "dir": "chungmu_kalguksu",
+      "type": "naver_place",
+      "naver_query": "충무칼국수 종로 인의동",
+      "addr": "서울 종로구 창경궁로 123-5",
+      "color": "#3a5a2a",
+      "keywords": "콩국수 칼국수 보쌈 간판 외관"
+    },
+    {
+      "name": "메르밀 진미집",
+      "dir": "jinmi_seoul",
+      "type": ["instagram", "naver_place"],
+      "account": "jinmi_seoul",
+      "naver_query": "메르밀진미집 논현직영점",
+      "addr": "서울 강남구 강남대로 506 1층",
+      "color": "#4a6741",
+      "keywords": "쑥 콩국수 소바 메밀 간판 외관"
+    },
+    {
+      "name": "강산옥",
+      "dir": "gangsanok",
+      "type": "naver_place",
+      "naver_query": "강산옥 을지로 콩국수",
+      "addr": "서울 중구 청계천로 196-1 2층",
+      "color": "#8a7a4a",
+      "keywords": "콩국수 콩비지 노포 간판 외관"
+    },
+    {
+      "name": "리두부로",
+      "dir": "liduburo",
+      "type": "naver_place",
+      "naver_query": "리두부로 청계산 두부",
+      "naver_place_id": "1568344467",
+      "addr": "서울 서초구 원터4길 7",
+      "color": "#e8e0c8",
+      "keywords": "두부 콩국수 두부전골 간판 외관"
+    },
+    {
+      "name": "피양콩할마니",
+      "dir": "piyangkong",
+      "type": "naver_place",
+      "naver_query": "피양콩할마니 대치동 콩국수",
+      "addr": "서울 강남구 삼성로81길 30",
+      "color": "#d8c8a8",
+      "keywords": "콩국수 콩비지 두부 간판 외관"
+    },
+    {
+      "name": "이조손칼국수",
+      "dir": "leejo_kalguksu",
+      "type": ["instagram", "naver_place"],
+      "account": "leejosonkalgugsu",
+      "naver_query": "이조손칼국수 구로",
+      "addr": "서울 구로구 공원로7길 22 1층",
+      "color": "#2a4a6a",
+      "keywords": "서리태 콩국수 칼국수 만두 간판 외관"
+    },
+    {
+      "name": "파머스마켓 팥집",
+      "dir": "farmers_patjip",
+      "type": "naver_place",
+      "naver_query": "파머스마켓팥집 압구정",
+      "addr": "서울 강남구 압구정로28길 25",
+      "color": "#9a3a3a",
+      "keywords": "팥죽 옹심이 팥빙수 장칼국수 간판 외관"
+    }
+  ]
+}
