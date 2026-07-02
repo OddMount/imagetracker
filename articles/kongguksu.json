@@ -14,7 +14,8 @@
     {
       "name": "충무칼국수",
       "dir": "chungmu_kalguksu",
-      "type": "naver_place",
+      "type": ["instagram", "naver_place"],
+      "account": "cm_no4_1966",
       "naver_query": "충무칼국수 종로 인의동",
       "addr": "서울 종로구 창경궁로 123-5",
       "color": "#3a5a2a",
@@ -42,7 +43,8 @@
     {
       "name": "리두부로",
       "dir": "liduburo",
-      "type": "naver_place",
+      "type": ["instagram", "naver_place"],
+      "account": "redoobooro",
       "naver_query": "리두부로 청계산 두부",
       "naver_place_id": "1568344467",
       "addr": "서울 서초구 원터4길 7",
@@ -71,7 +73,8 @@
     {
       "name": "파머스마켓 팥집",
       "dir": "farmers_patjip",
-      "type": "naver_place",
+      "type": ["instagram", "naver_place"],
+      "account": "redbeanhouse2018",
       "naver_query": "파머스마켓팥집 압구정",
       "addr": "서울 강남구 압구정로28길 25",
       "color": "#9a3a3a",
