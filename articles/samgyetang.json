@@ -1,0 +1,66 @@
+{
+  "slug": "samgyetang",
+  "title": "긴 줄도 괜찮아! 서울의 삼계탕 맛집 6",
+  "spots": [
+    {
+      "name": "원조호수삼계탕",
+      "dir": "hosu",
+      "type": ["naver_place"],
+      "account": "",
+      "naver_query": "원조호수삼계탕",
+      "addr": "서울 영등포구 도림로 276",
+      "color": "#7a4a1e",
+      "keywords": "삼계탕 들깨삼계탕 국물 통오이 고추장 밤 인삼 찹쌀"
+    },
+    {
+      "name": "강원정",
+      "dir": "gangwonjeong",
+      "type": ["naver_place"],
+      "account": "",
+      "naver_query": "강원정 삼계탕",
+      "addr": "서울 용산구 원효로89길 13-10",
+      "color": "#3f6b42",
+      "keywords": "삼계탕 인삼주 해바라기씨 파 육수 노포"
+    },
+    {
+      "name": "한방정통삼계탕",
+      "dir": "hanbang",
+      "type": ["naver_place"],
+      "account": "",
+      "naver_query": "한방정통삼계탕",
+      "addr": "서울 강남구 테헤란로81길 35",
+      "color": "#5a3a1a",
+      "keywords": "삼계탕 반계탕 닭볶음탕 인삼주 담백 국물"
+    },
+    {
+      "name": "3대삼계장인",
+      "dir": "samdae",
+      "type": ["naver_place"],
+      "account": "",
+      "naver_query": "3대삼계장인",
+      "addr": "서울 서초구 반포대로28길 56-3 한라빌딩 1층",
+      "color": "#6b4423",
+      "keywords": "잣삼계탕 삼계탕 수비드 산삼배양근 녹두 쑥 닭볶음탕"
+    },
+    {
+      "name": "진전복삼계탕 본점",
+      "dir": "jinjeonbok",
+      "type": ["naver_place"],
+      "account": "",
+      "naver_query": "진전복삼계탕 본점",
+      "addr": "서울 강남구 언주로133길 18 지하 1층",
+      "color": "#2a4d5e",
+      "keywords": "전복삼계탕 삼계탕 통전복 전복죽 쑥전 웅추닭"
+    },
+    {
+      "name": "영양센터 본점",
+      "dir": "yeongyang",
+      "type": ["naver_place"],
+      "account": "",
+      "naver_query": "명동영양센터 본점",
+      "addr": "서울 중구 명동2길 52",
+      "color": "#a63a1e",
+      "keywords": "삼계탕 산삼삼계탕 전기구이 통닭 통닭정식 명동"
+    }
+  ]
+}
