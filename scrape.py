@@ -67,8 +67,79 @@ def ig_login(force=False):
     return L.context._session
 
 
+def ig_fetch_profile_playwright(account, ig_session):
+    """API 차단 계정용 Playwright fallback — 실제 브라우저로 세션 쿠키 주입해서 우회."""
+    print(f"  Playwright fallback: @{account}")
+    posts = {}
+
+    def parse_edges_local(edges):
+        out = {}
+        for edge in edges:
+            node = edge.get("node", {})
+            sc = node.get("shortcode")
+            if not sc:
+                continue
+            if node.get("__typename") == "GraphSidecar":
+                children = node.get("edge_sidecar_to_children", {}).get("edges", [])
+                img_url = children[0]["node"]["display_url"] if children else node.get("display_url", "")
+            else:
+                img_url = node.get("display_url", "")
+            cap_edges = node.get("edge_media_to_caption", {}).get("edges", [])
+            out[sc] = {
+                "img_url": img_url,
+                "caption": cap_edges[0]["node"]["text"] if cap_edges else "",
+            }
+        return out
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent=IG_HEADERS.get("user-agent", "Mozilla/5.0"),
+            viewport={"width": 1280, "height": 800},
+            extra_http_headers={"Accept-Language": "ko-KR,ko;q=0.9"},
+        )
+        # instaloader 세션 쿠키 → Playwright로 이식
+        pw_cookies = []
+        for c in ig_session.cookies:
+            pw_cookies.append({
+                "name": c.name,
+                "value": c.value,
+                "domain": c.domain if c.domain else ".instagram.com",
+                "path": c.path if c.path else "/",
+            })
+        if pw_cookies:
+            context.add_cookies(pw_cookies)
+
+        page = context.new_page()
+
+        def handle_response(response):
+            url = response.url
+            if "web_profile_info" in url and account.lower() in url.lower():
+                try:
+                    data = response.json()
+                    user = data.get("data", {}).get("user", {})
+                    if user:
+                        media = user.get("edge_owner_to_timeline_media", {})
+                        posts.update(parse_edges_local(media.get("edges", [])))
+                        print(f"  Playwright API 인터셉트: {len(posts)}개 포스트")
+                except Exception:
+                    pass
+
+        page.on("response", handle_response)
+        try:
+            page.goto(f"https://www.instagram.com/{account}/", wait_until="networkidle", timeout=30000)
+            page.wait_for_timeout(3000)
+        except Exception as e:
+            print(f"  Playwright 로드 실패: {e}")
+        context.close()
+        browser.close()
+
+    print(f"  Playwright 수집: {len(posts)}개 포스트")
+    return posts
+
+
 def ig_fetch_profile(session, account, max_posts=100):
-    """프로필 + 포스트 가져오기. 첫 페이지 후 instaloader로 페이지네이션."""
+    """프로필 + 포스트 가져오기. API 차단 시 Playwright로 자동 fallback."""
     r = session.get(
         f"https://www.instagram.com/api/v1/users/web_profile_info/?username={account}",
         headers=IG_HEADERS, timeout=15
@@ -78,7 +149,9 @@ def ig_fetch_profile(session, account, max_posts=100):
         return None, {}
     data = r.json()
     if "data" not in data or not data["data"].get("user"):
-        return None, {}
+        # API 차단 계정 → Playwright fallback
+        posts = ig_fetch_profile_playwright(account, session)
+        return {"full_name": "", "biography": "", "is_private": False}, posts
     user = data["data"]["user"]
     meta = {
         "full_name": user.get("full_name", ""),
@@ -522,6 +595,111 @@ def scrape_kakao(spot, slug):
     return saved
 
 
+# ── 다이닝코드 ────────────────────────────────────────────────────
+
+DC_PHOTO_HOST = "d12zq4w4guyljn.cloudfront.net"   # 음식 사진 CDN (UI/광고는 다른 도메인)
+DC_MIN_AGE    = float(os.environ.get("DC_MIN_AGE", "0"))  # 이 나이(년) 이상만 (0=제한없음, 오래된순 정렬은 항상)
+
+def _dc_photo_ts(url):
+    """다이닝코드 사진 파일명의 업로드 타임스탬프(YYYYMMDDHHMMSS) → datetime or None"""
+    from datetime import datetime
+    m = re.search(r'_(\d{14})\d*_photo_', url)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(m.group(1), "%Y%m%d%H%M%S")
+    except Exception:
+        return None
+
+
+def scrape_diningcode(spot, slug):
+    from datetime import datetime
+    query    = spot.get("diningcode_query") or spot.get("naver_query", spot["name"])
+    dir_name = spot["dir"]
+    dest = Path(f"references/images/{slug}/{dir_name}/diningcode")
+    dest.mkdir(parents=True, exist_ok=True)
+    for f in dest.glob("dc_*.jpg"):
+        f.unlink()
+
+    print(f"  다이닝코드: {spot['name']}")
+    photo_urls = []
+    rid = None
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(
+            user_agent=MOBILE_UA, viewport={"width": 390, "height": 844},
+            extra_http_headers={"Accept-Language": "ko-KR,ko;q=0.9"},
+        )
+        try:
+            page.goto(f"https://www.diningcode.com/list.dc?query={urllib.parse.quote(query)}",
+                      wait_until="networkidle", timeout=30000)
+            page.wait_for_timeout(1500)
+            rids = re.findall(r'rid=([A-Za-z0-9]+)', page.content())
+            rid = rids[0] if rids else None
+        except Exception as e:
+            print(f"    검색 실패: {e}")
+        if not rid:
+            print("    rid 없음, 스킵")
+            browser.close()
+            return []
+        print(f"    rid: {rid}")
+
+        seen = set()
+        def on_resp(response):
+            u = response.url
+            if DC_PHOTO_HOST in u and "_photo_" in u and u not in seen:
+                seen.add(u)
+                photo_urls.append(u)
+
+        page.on("response", on_resp)
+        try:
+            page.goto(f"https://www.diningcode.com/profile.php?rid={rid}",
+                      wait_until="networkidle", timeout=30000)
+            page.wait_for_timeout(2000)
+            for _ in range(10):
+                page.evaluate("window.scrollBy(0, 900)")
+                page.wait_for_timeout(500)
+        except Exception as e:
+            print(f"    프로필 로드 실패: {e}")
+        browser.close()
+
+    profile_url = f"https://www.diningcode.com/profile.php?rid={rid}"
+    now = datetime.now()
+    cand = []
+    for u in photo_urls:
+        ts  = _dc_photo_ts(u)
+        age = (now - ts).days / 365.25 if ts else None
+        cand.append((age, u))
+    # 오래된 사진 우선 (나이 큰 순), 타임스탬프 없는 건 뒤로
+    cand.sort(key=lambda x: -(x[0] if x[0] is not None else -999))
+    print(f"    음식 사진 후보 {len(cand)}개")
+
+    dl_headers = {"User-Agent": MOBILE_UA, "Referer": "https://www.diningcode.com/"}
+    saved = []
+    idx = 0
+    for age, src in cand:
+        if len(saved) >= MAX_NAVER:
+            break
+        if DC_MIN_AGE and (age is None or age < DC_MIN_AGE):
+            continue
+        try:
+            r = requests.get(src, headers=dl_headers, timeout=15)
+            r.raise_for_status()
+            if len(r.content) < 30_000:
+                continue
+            img = Image.open(io.BytesIO(r.content)).convert("RGB")
+            fname = dest / f"dc_{idx:02d}.jpg"
+            img.save(fname, "JPEG", quality=90)
+            agestr = f"{age:.1f}년 전" if age is not None else "날짜 미상"
+            saved.append({"path": str(fname), "src_url": profile_url,
+                          "photo_url": src, "age": agestr, "dir": dir_name})
+            print(f"    저장: {fname.name} (업로드 {agestr})")
+            idx += 1
+        except Exception as e:
+            print(f"    다운로드 실패: {e}")
+    return saved
+
+
 # ── HTML 생성/업데이트 ────────────────────────────────────────────
 
 GITHUB_RAW = "https://raw.githubusercontent.com/OddMount/imagetracker/master/references/images"
@@ -541,7 +719,7 @@ def card_ig(item, spot, slug):
   <div class="img-wrap">
     <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
     <span class="badge" style="background:#e1306c">Instagram</span>
-    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{post_id}')}">⬇ JPG</a>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{post_id}')}">⬇ 저장</a>
   </div>
   <div class="meta">
     <p class="attr">사진/ @{account}</p>
@@ -558,7 +736,7 @@ def card_naver(item, spot, slug):
   <div class="img-wrap">
     <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
     <span class="badge" style="background:#03c75a">네이버</span>
-    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ JPG</a>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ 저장</a>
   </div>
   <div class="meta">
     <p class="attr">사진/ 업체제공 (네이버 플레이스)</p>
@@ -577,11 +755,30 @@ def card_google(item, spot, slug):
   <div class="img-wrap">
     <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
     <span class="badge" style="background:#4285f4">Google</span>
-    <a class="dl-btn" href="{web_path}" download="{dir_name}_{fname}">⬇ JPG</a>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ 저장</a>
   </div>
   <div class="meta">
+    <p class="attr" style="color:#c0392b">⚠️ 저작권 확인 필요</p>
     <p class="attr">출처/ {domain}</p>
     <a class="src" href="{src_url}" target="_blank">원본 확인 →</a>
+  </div>
+</div>"""
+
+
+def card_diningcode(item, spot, slug):
+    dir_name = spot["dir"]
+    fname    = Path(item["path"]).name
+    web_path = f"/ref/images/{slug}/{dir_name}/diningcode/{fname}"
+    age      = item.get("age", "")
+    return f"""<div class="card dc-card">
+  <div class="img-wrap">
+    <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
+    <span class="badge" style="background:#ff5722">다이닝코드</span>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ 저장</a>
+  </div>
+  <div class="meta">
+    <p class="attr" style="color:#c0392b">⚠️ 저작권 확인 필요 · 업로드 {age}</p>
+    <a class="src" href="{item['src_url']}" target="_blank">다이닝코드 원본 →</a>
   </div>
 </div>"""
 
@@ -594,7 +791,7 @@ def card_kakao(item, spot, slug):
   <div class="img-wrap">
     <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
     <span class="badge" style="background:#ffcd00;color:#3c1e1e">카카오</span>
-    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ JPG</a>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ 저장</a>
   </div>
   <div class="meta">
     <p class="attr">사진/ 업체제공 (카카오맵)</p>
@@ -611,7 +808,7 @@ def card_manual(item, spot, slug):
   <div class="img-wrap">
     <img src="{web_path}" loading="lazy" onerror="this.closest('.card').style.display='none'">
     <span class="badge" style="background:#888">직접제공</span>
-    <a class="dl-btn" href="{web_path}" download="{dir_name}_{fname}">⬇ JPG</a>
+    <a class="dl-btn" href="{_dl_url(web_path, f'{dir_name}_{fname}')}">⬇ 저장</a>
   </div>
   <div class="meta">
     <p class="attr">사진/ 업체 제공</p>
@@ -627,6 +824,7 @@ SECTION_TMPL = """<section id="sec-{dir}" style="border-top:3px solid {color};pa
     <div class="ig-grid ig-{dir}">{ig_cards}</div>
     <div class="ig-grid naver-grid naver-{dir}">{naver_cards}</div>
     <div class="ig-grid kakao-grid kakao-{dir}">{kakao_cards}</div>
+    <div class="ig-grid dc-grid dc-{dir}">{dc_cards}</div>
     <div class="ig-grid manual-grid manual-{dir}">{manual_cards}</div>
   </div>
 </section>"""
@@ -673,6 +871,7 @@ def build_html(config, all_saved, slug):
         naver_cards  = "".join(card_naver(i, spot, slug)  for i in saved.get("naver", []))
         kakao_cards  = "".join(card_kakao(i, spot, slug)  for i in saved.get("kakao", []))
         google_cards = "".join(card_google(i, spot, slug) for i in saved.get("google", []))
+        dc_cards     = "".join(card_diningcode(i, spot, slug) for i in saved.get("diningcode", []))
         manual_cards = "".join(card_manual(i, spot, slug) for i in saved.get("manual", []))
 
         sections.append(SECTION_TMPL.format(
@@ -681,8 +880,9 @@ def build_html(config, all_saved, slug):
             name=spot["name"],
             addr=spot.get("addr", ""),
             ig_cards=ig_cards,
-            naver_cards=naver_cards + google_cards,
+            naver_cards=naver_cards,
             kakao_cards=kakao_cards,
+            dc_cards=dc_cards + google_cards,
             manual_cards=manual_cards,
         ))
 
@@ -757,6 +957,11 @@ def main():
             all_saved[dir_name]["google"] = result
             time.sleep(2)
 
+        if "diningcode" in types:
+            result = scrape_diningcode(spot, slug)
+            all_saved[dir_name]["diningcode"] = result
+            time.sleep(2)
+
         if "manual" in types:
             result = scrape_manual(spot, slug)
             all_saved[dir_name]["manual"] = result
@@ -770,9 +975,10 @@ def main():
         ig_n  = len(d.get("instagram", []))
         nav_n = len(d.get("naver", []))
         kak_n = len(d.get("kakao", []))
+        dc_n  = len(d.get("diningcode", []))
         goo_n = len(d.get("google", []))
         man_n = len(d.get("manual", []))
-        print(f"  {spot['name']}: IG {ig_n}장 / 네이버 {nav_n}장 / 카카오 {kak_n}장 / Google {goo_n}장 / manual {man_n}장")
+        print(f"  {spot['name']}: IG {ig_n} / 네이버 {nav_n} / 카카오 {kak_n} / 다이닝코드 {dc_n} / Google {goo_n} / manual {man_n}")
 
     build_html(config, all_saved, slug)
 
