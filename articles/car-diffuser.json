@@ -13,8 +13,8 @@
     {
       "name": "탬버린즈 카 디퓨저 4종",
       "dir": "tamburinsofficial",
-      "type": "instagram",
-      "account": "tamburinsofficial",
+      "type": "google_images",
+      "query": "탬버린즈 카 디퓨저 릴리코코 비갈리코 블루포레스트",
       "color": "#3a2e2a",
       "keywords": "카디퓨저 차량용 릴리코코 비갈리코 블루포레스트 카모 디퓨저"
     },
@@ -29,8 +29,8 @@
     {
       "name": "라브루켓 히노키 프레그런스 태그",
       "dir": "labruket",
-      "type": "instagram",
-      "account": "labruket",
+      "type": "google_images",
+      "query": "라브루켓 프레그런스 태그 히노키 L:A Bruket fragrance tag hinoki",
       "color": "#5a4a30",
       "keywords": "프레그런스태그 히노키 태그 차량용 fragrancetag hinoki 디퓨저"
     },

@@ -918,9 +918,15 @@ def main():
         for spot in config["spots"]:
             d = spot["dir"]
             all_saved[d] = {"instagram": [], "naver": [], "kakao": [], "google": [], "manual": []}
-            for sc in Path(f"references/images/{slug}/{d}").glob("*.jpg"):
-                all_saved[d]["instagram"].append({"path": str(sc), "post_id": sc.stem,
-                                                   "post_url": f"https://www.instagram.com/p/{sc.stem}/"})
+            spot_types = spot.get("type", [])
+            if isinstance(spot_types, str):
+                spot_types = [spot_types]
+            if "instagram" in spot_types:
+                for sc in Path(f"references/images/{slug}/{d}").glob("*.jpg"):
+                    if sc.name.startswith(("gimg_", "kakao_", "dc_")):
+                        continue
+                    all_saved[d]["instagram"].append({"path": str(sc), "post_id": sc.stem,
+                                                       "post_url": f"https://www.instagram.com/p/{sc.stem}/"})
             for nf in Path(f"references/images/{slug}/{d}/naver").glob("naver_*.jpg"):
                 all_saved[d]["naver"].append({"path": str(nf), "src_url": "", "naver_url": "", "dir": d})
 
