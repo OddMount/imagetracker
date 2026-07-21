@@ -13,10 +13,16 @@
     {
       "name": "탬버린즈 카 디퓨저 4종",
       "dir": "tamburinsofficial",
-      "type": "google_images",
-      "query": "탬버린즈 카 디퓨저 릴리코코 비갈리코 블루포레스트",
-      "color": "#3a2e2a",
-      "keywords": "카디퓨저 차량용 릴리코코 비갈리코 블루포레스트 카모 디퓨저"
+      "type": "manual",
+      "urls": [
+        "https://web-resource.tamburins.com/catalog/product/1722263485/f382334d-b2d0-4614-a6fa-81dee74aac77/CarDiffuser_Lilycoco.png",
+        "https://web-resource.tamburins.com/catalog/product/1745699988/36901f6f-2c8e-4458-a6c8-5853765cf0b4/CarDiffuser_Bigarico.png",
+        "https://web-resource.tamburins.com/catalog/product/1744451785/cbd0bc3a-d985-4446-a2a8-dbd89f9c19dd/CarDiffuser_BlueForest.png",
+        "https://web-resource.tamburins.com/catalog/product/1733387658/fecbdb7b-94fb-44f1-96c0-9b4838070424/CarDiffuser_Chamo.png",
+        "https://web-resource.tamburins.com/catalog/product/1766698546/90d4a1d7-b7f4-435f-9689-e39e132d3d84/Thumbnail_cardiffuser_refill_bigalico.jpg",
+        "https://web-resource.tamburins.com/catalog/product/1711697977/510518ce-7406-4f6e-aa4f-4ca92a8ad38e/Thumbnail_cardiffuser_mini_lily.jpg"
+      ],
+      "color": "#3a2e2a"
     },
     {
       "name": "로에 그린티",
@@ -29,10 +35,15 @@
     {
       "name": "라브루켓 히노키 프레그런스 태그",
       "dir": "labruket",
-      "type": "google_images",
-      "query": "라브루켓 프레그런스 태그 히노키 L:A Bruket fragrance tag hinoki",
-      "color": "#5a4a30",
-      "keywords": "프레그런스태그 히노키 태그 차량용 fragrancetag hinoki 디퓨저"
+      "type": "manual",
+      "urls": [
+        "https://www.labruket.com/cdn/shop/products/car-_1438-x-1798copy.jpg?v=1756903457&width=1946",
+        "https://www.labruket.com/cdn/shop/products/116_d5374f2566-11023-02-original.jpg?v=1756903457&width=1946",
+        "https://www.labruket.com/cdn/shop/products/000077490022copy2.jpg?v=1756903457&width=1946",
+        "https://www.labruket.com/cdn/shop/files/MicrosoftTeams-image_26.jpg?v=1747412935&width=1946",
+        "https://www.labruket.com/cdn/shop/files/0007572-R1-30-31Acopy.jpg?v=1756903457&width=1946"
+      ],
+      "color": "#5a4a30"
     },
     {
       "name": "오센트 산리오 캐릭터즈",
