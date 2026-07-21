@@ -478,7 +478,11 @@ def scrape_manual(spot, slug):
         ext = url.split("?")[0].rsplit(".", 1)[-1] or "jpg"
         fname = dest / f"manual_{i:02d}.{ext}"
         try:
-            r = requests.get(url, timeout=20)
+            origin = "/".join(url.split("/")[:3]) + "/"
+            m_headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+                         "Referer": origin}
+            r = requests.get(url, headers=m_headers, timeout=20)
             r.raise_for_status()
             fname.write_bytes(r.content)
             saved.append({"path": str(fname), "src_url": url})
@@ -923,7 +927,7 @@ def main():
                 spot_types = [spot_types]
             if "instagram" in spot_types:
                 for sc in Path(f"references/images/{slug}/{d}").glob("*.jpg"):
-                    if sc.name.startswith(("gimg_", "kakao_", "dc_")):
+                    if sc.name.startswith(("gimg_", "kakao_", "dc_", "manual_")):
                         continue
                     all_saved[d]["instagram"].append({"path": str(sc), "post_id": sc.stem,
                                                        "post_url": f"https://www.instagram.com/p/{sc.stem}/"})

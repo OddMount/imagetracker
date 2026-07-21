@@ -29,8 +29,14 @@
     {
       "name": "로에 그린티",
       "dir": "loe_cosmetics_official",
-      "type": "instagram",
+      "type": ["instagram", "manual"],
       "account": "loe_cosmetics_official",
+      "urls": [
+        "https://m.loe-cosmetics.com/web/product/big/202501/7831189459072d797f0d3decd060a079.jpg",
+        "https://m.loe-cosmetics.com/web/product/extra/big/202501/fcd407ac7d33fc2c12ca6bf8118c957c.jpg",
+        "https://m.loe-cosmetics.com/web/product/extra/big/202507/d37ef3a3fe60f47f37adbbcc90dbf0ed.jpg",
+        "https://m.loe-cosmetics.com/web/product/extra/big/202501/bb27cf0de9566b0fcd8d522fe11875cf.jpg"
+      ],
       "color": "#3a4a2a",
       "keywords": "카디퓨저 그린티 녹차 차량용 몽돌 스톤 디퓨저"
     },
@@ -50,18 +56,23 @@
     {
       "name": "오센트 산리오 캐릭터즈",
       "dir": "ohscent",
-      "type": "instagram",
+      "type": ["instagram", "manual"],
       "account": "ohscent",
+      "urls": [
+        "https://ohscent.com/web/product/big/202606/8ca5164eadc1f64d1ef59e88057112b2.png"
+      ],
       "color": "#c98aa8",
       "keywords": "산리오 카디퓨저 헬로키티 쿠로미 마이멜로디 차량용 방향제 캐릭터"
     },
     {
       "name": "현대자동차 x 포켓몬 차량용 방향제",
       "dir": "hyundai_pokemon",
-      "type": "google_images",
-      "query": "현대자동차 포켓몬 방향제 고라파덕 이상해씨",
-      "color": "#d9a94a",
-      "keywords": "포켓몬 방향제 고라파덕 이상해씨 현대자동차 부산모빌리티쇼"
+      "type": "manual",
+      "urls": [
+        "https://www.dhnews.co.kr/news/data/20260629/p1065591818652627_807.jpg",
+        "https://www.dhnews.co.kr/news/data/20260629/p1065591818652627_760.jpg"
+      ],
+      "color": "#d9a94a"
     }
   ]
 }
