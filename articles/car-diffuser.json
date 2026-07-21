@@ -1,0 +1,54 @@
+{
+  "slug": "car-diffuser",
+  "title": "향기롭게 카꾸하자, 여름의 카 디퓨저 6 (하퍼스바자 최노아)",
+  "spots": [
+    {
+      "name": "바이레도 카 디퓨저",
+      "dir": "byredo",
+      "type": "google_images",
+      "query": "byredo car diffuser 바이레도 카디퓨저",
+      "color": "#1a1a1a",
+      "keywords": "카디퓨저 차량용 콜드디퓨전 송풍구 비블리오티크 썸머레인 코인런드리 홈컬렉션"
+    },
+    {
+      "name": "탬버린즈 카 디퓨저 4종",
+      "dir": "tamburinsofficial",
+      "type": "instagram",
+      "account": "tamburinsofficial",
+      "color": "#3a2e2a",
+      "keywords": "카디퓨저 차량용 릴리코코 비갈리코 블루포레스트 카모 디퓨저"
+    },
+    {
+      "name": "로에 그린티",
+      "dir": "loe_cosmetics_official",
+      "type": "instagram",
+      "account": "loe_cosmetics_official",
+      "color": "#3a4a2a",
+      "keywords": "카디퓨저 그린티 녹차 차량용 몽돌 스톤 디퓨저"
+    },
+    {
+      "name": "라브루켓 히노키 프레그런스 태그",
+      "dir": "labruket",
+      "type": "instagram",
+      "account": "labruket",
+      "color": "#5a4a30",
+      "keywords": "프레그런스태그 히노키 태그 차량용 fragrancetag hinoki 디퓨저"
+    },
+    {
+      "name": "오센트 산리오 캐릭터즈",
+      "dir": "ohscent",
+      "type": "instagram",
+      "account": "ohscent",
+      "color": "#c98aa8",
+      "keywords": "산리오 카디퓨저 헬로키티 쿠로미 마이멜로디 차량용 방향제 캐릭터"
+    },
+    {
+      "name": "현대자동차 x 포켓몬 차량용 방향제",
+      "dir": "hyundai_pokemon",
+      "type": "google_images",
+      "query": "현대자동차 포켓몬 방향제 고라파덕 이상해씨",
+      "color": "#d9a94a",
+      "keywords": "포켓몬 방향제 고라파덕 이상해씨 현대자동차 부산모빌리티쇼"
+    }
+  ]
+}
