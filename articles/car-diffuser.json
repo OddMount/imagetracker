@@ -5,7 +5,8 @@
     {
       "name": "바이레도 카 디퓨저",
       "dir": "byredo",
-      "type": "manual",
+      "type": ["manual", "google_images"],
+      "query": "byredo car diffuser 바이레도 카 디퓨저",
       "urls": [
         "https://xovvdk.infiniteuploads.cloud/2026/07/byredo-car-diffuser-1.jpg",
         "https://i0.wp.com/xovvdk.infiniteuploads.cloud/2026/07/byredo-car-diffuser-2.jpeg?resize=1024%2C1024&ssl=1"
@@ -15,7 +16,8 @@
     {
       "name": "탬버린즈 카 디퓨저 4종",
       "dir": "tamburinsofficial",
-      "type": "manual",
+      "type": ["manual", "google_images"],
+      "query": "탬버린즈 카 디퓨저 릴리코코 비가리코 블루포레스트",
       "urls": [
         "https://web-resource.tamburins.com/catalog/product/1722263485/f382334d-b2d0-4614-a6fa-81dee74aac77/CarDiffuser_Lilycoco.png",
         "https://web-resource.tamburins.com/catalog/product/1745699988/36901f6f-2c8e-4458-a6c8-5853765cf0b4/CarDiffuser_Bigarico.png",
@@ -29,7 +31,8 @@
     {
       "name": "로에 그린티",
       "dir": "loe_cosmetics_official",
-      "type": ["instagram", "manual"],
+      "type": ["instagram", "manual", "google_images"],
+      "query": "로에 그린티 카 디퓨저 몽돌 스톤",
       "account": "loe_cosmetics_official",
       "urls": [
         "https://m.loe-cosmetics.com/web/product/big/202501/7831189459072d797f0d3decd060a079.jpg",
@@ -43,7 +46,8 @@
     {
       "name": "라브루켓 히노키 프레그런스 태그",
       "dir": "labruket",
-      "type": "manual",
+      "type": ["manual", "google_images"],
+      "query": "라브루켓 프레그런스 태그 히노키 L:A Bruket fragrance tag hinoki",
       "urls": [
         "https://www.labruket.com/cdn/shop/products/car-_1438-x-1798copy.jpg?v=1756903457&width=1946",
         "https://www.labruket.com/cdn/shop/products/116_d5374f2566-11023-02-original.jpg?v=1756903457&width=1946",
@@ -56,7 +60,8 @@
     {
       "name": "오센트 산리오 캐릭터즈",
       "dir": "ohscent",
-      "type": ["instagram", "manual"],
+      "type": ["instagram", "manual", "google_images"],
+      "query": "오센트 산리오 헬로키티 카 디퓨저 차량용 방향제",
       "account": "ohscent",
       "urls": [
         "https://ohscent.com/web/product/big/202606/8ca5164eadc1f64d1ef59e88057112b2.png"
@@ -67,7 +72,8 @@
     {
       "name": "현대자동차 x 포켓몬 차량용 방향제",
       "dir": "hyundai_pokemon",
-      "type": "manual",
+      "type": ["manual", "google_images"],
+      "query": "현대자동차 포켓몬 방향제 고라파덕 이상해씨",
       "urls": [
         "https://www.dhnews.co.kr/news/data/20260629/p1065591818652627_807.jpg",
         "https://www.dhnews.co.kr/news/data/20260629/p1065591818652627_760.jpg"
