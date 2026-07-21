@@ -5,10 +5,12 @@
     {
       "name": "바이레도 카 디퓨저",
       "dir": "byredo",
-      "type": "google_images",
-      "query": "byredo car diffuser 바이레도 카디퓨저",
-      "color": "#1a1a1a",
-      "keywords": "카디퓨저 차량용 콜드디퓨전 송풍구 비블리오티크 썸머레인 코인런드리 홈컬렉션"
+      "type": "manual",
+      "urls": [
+        "https://xovvdk.infiniteuploads.cloud/2026/07/byredo-car-diffuser-1.jpg",
+        "https://i0.wp.com/xovvdk.infiniteuploads.cloud/2026/07/byredo-car-diffuser-2.jpeg?resize=1024%2C1024&ssl=1"
+      ],
+      "color": "#1a1a1a"
     },
     {
       "name": "탬버린즈 카 디퓨저 4종",
