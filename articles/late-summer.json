@@ -1,0 +1,97 @@
+{
+  "slug": "late-summer",
+  "title": "처서까지 2주, 여름의 끝 (하퍼스바자 최노아)",
+  "spots": [
+    {
+      "name": "보연희",
+      "dir": "beau_yeonhee",
+      "type": ["instagram", "naver_place"],
+      "account": "beau_yeonhee",
+      "naver_query": "보연희 연희동",
+      "addr": "서울 서대문구 연희맛로 17-63 2층",
+      "color": "#4a2e1a",
+      "keywords": "무화과 케이크 무화과나무 Figuier 크레페 타르트"
+    },
+    {
+      "name": "파티세리 까이에",
+      "dir": "patisserie_cahier",
+      "type": ["instagram", "naver_place"],
+      "account": "patisserie_cahier",
+      "naver_query": "까이에 망원동",
+      "addr": "서울 마포구 월드컵로3길 14 딜라이트스퀘어 2차 상가동 1층 105호",
+      "color": "#5a6b3a",
+      "keywords": "무화과 쑥 무슬린 크림 커스터드"
+    },
+    {
+      "name": "크레뮤 클럽",
+      "dir": "cremeux_club",
+      "type": ["instagram", "naver_place"],
+      "account": "cremeux_club",
+      "naver_query": "크레뮤 클럽 송리단길",
+      "addr": "서울 송파구 백제고분로45길 21 2층",
+      "color": "#7a4a5a",
+      "keywords": "무화과 프렌치토스트 판나코타 파블로바 바스크치즈 아이스크림 FIG CLUB"
+    },
+    {
+      "name": "새들러 하우스",
+      "dir": "saddlerhaus_bakery",
+      "type": ["instagram", "naver_place"],
+      "account": "saddlerhaus_bakery",
+      "naver_query": "새들러 하우스 가로수길",
+      "addr": "서울 강남구 신사동 도산대로17길 10",
+      "color": "#8a6a3a",
+      "keywords": "무화과 파이 산도 얼그레이 생크림 288겹"
+    },
+    {
+      "name": "무가보",
+      "dir": "mu_ga_bo",
+      "type": ["instagram", "naver_place"],
+      "account": "mu.ga.bo",
+      "naver_query": "무가보 목포",
+      "addr": "전라남도 목포시 대의동3가 1 1층",
+      "color": "#3a5a4a",
+      "keywords": "무화과 아이스크림 크림치즈 토스트 가을아 반가워"
+    },
+    {
+      "name": "랄티잔 파퓨미에르 프리미에 피귀에",
+      "dir": "premier_figuier",
+      "type": ["manual", "google_images"],
+      "query": "L'Artisan Parfumeur Premier Figuier 프리미에 피귀에",
+      "urls": [
+        "https://dynamic-assets.artisanparfumeur.com/is/image/puig/LA%20COLLECTION_1650X1650_Premier%20Figuier_EDT_100ml_Bottle%20NEW%20PDP?version=23927f9bfd61550c63fd31b430bf261372ffeae0",
+        "https://dynamic-assets.artisanparfumeur.com/is/image/puig/PDP_PREMIER_FIGUIER_1650X1650?version=34189cdaa39d45a70a7045dc67502b44970a1798",
+        "https://dynamic-assets.artisanparfumeur.com/is/image/puig/LA%20COLLECTION_1650X1650_Premier%20Figuier_BOTTLE%20WITH%20BOX_NEW%20PDP?version=1c97335af865b1be2d9938a5b191c9df01f5c4a4"
+      ],
+      "color": "#2a3a1a"
+    },
+    {
+      "name": "딥티크 필로시코스",
+      "dir": "philosykos",
+      "type": ["manual", "google_images"],
+      "query": "Diptyque Philosykos 딥티크 필로시코스",
+      "urls": [
+        "https://us.diptyqueparis.com/cdn/shop/files/diptyque-philosykos-eau-de-toilette-100ml-philo100-1_0831aeef-f2a4-4617-a6a1-6ea9bb724a47.jpg",
+        "https://us.diptyqueparis.com/cdn/shop/files/diptyque-philosykos-eau-de-toilette-100ml-philo100-2_3d4cb3be-d671-4536-80d1-09cfd601f59b.jpg",
+        "https://us.diptyqueparis.com/cdn/shop/files/diptyque-philosykos-eau-de-toilette-100ml-philo100-3_7d736508-05e2-4af5-8bc8-648570804eb6.jpg",
+        "https://us.diptyqueparis.com/cdn/shop/files/philosykos_cagette_9x16_2025_x_3600px_vue-alt-pdp_rvb_diptyque.jpg"
+      ],
+      "color": "#1a2a1a"
+    },
+    {
+      "name": "톰포드 피그 에로티크",
+      "dir": "figue_erotique",
+      "type": ["google_images"],
+      "query": "Tom Ford Figue Erotique 피그 에로티크 향수",
+      "urls": [],
+      "color": "#6a1a2a"
+    },
+    {
+      "name": "지방시 트루블페트",
+      "dir": "trouble_fete",
+      "type": ["google_images"],
+      "query": "Givenchy Trouble Fete 지방시 트루블페트 향수",
+      "urls": [],
+      "color": "#2a2a2a"
+    }
+  ]
+}

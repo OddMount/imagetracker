@@ -473,9 +473,18 @@ def scrape_manual(spot, slug):
     dest = Path(f"references/images/{slug}/{dir_name}")
     dest.mkdir(parents=True, exist_ok=True)
 
+    VALID_EXTS = {"jpg", "jpeg", "png", "webp", "gif"}
     saved = []
     for i, url in enumerate(urls):
-        ext = url.split("?")[0].rsplit(".", 1)[-1] or "jpg"
+        # Scene7류 다이나믹 이미지 CDN(예: L'Artisan Parfumeur)은 URL에 파일 확장자가
+        # 아예 없어서(경로만 있음), 무작정 마지막 "."로 rsplit하면 도메인의 ".com"에
+        # 걸려 "com/is/image/..." 같은 존재하지 않는 하위경로가 확장자로 잡히는 버그가 있었음.
+        # path 부분만 떼서 마지막 세그먼트에서 확장자를 찾고, 유효한 이미지 확장자가
+        # 아니면 무조건 jpg로 fallback.
+        path = url.split("?")[0].split("/")[-1]
+        ext = path.rsplit(".", 1)[-1].lower() if "." in path else ""
+        if ext not in VALID_EXTS:
+            ext = "jpg"
         fname = dest / f"manual_{i:02d}.{ext}"
         try:
             origin = "/".join(url.split("/")[:3]) + "/"
