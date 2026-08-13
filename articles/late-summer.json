@@ -80,7 +80,9 @@
     {
       "name": "톰포드 피그 에로티크",
       "dir": "figue_erotique",
-      "type": ["google_images"],
+      "type": ["instagram", "google_images"],
+      "account": "tomfordbeauty",
+      "keywords": "figue erotique fig",
       "query": "Tom Ford Figue Erotique 피그 에로티크 향수",
       "urls": [],
       "color": "#6a1a2a"
@@ -88,10 +90,45 @@
     {
       "name": "지방시 트루블페트",
       "dir": "trouble_fete",
-      "type": ["google_images"],
+      "type": ["instagram", "google_images"],
+      "account": "givenchybeauty",
+      "keywords": "trouble fete fig",
       "query": "Givenchy Trouble Fete 지방시 트루블페트 향수",
       "urls": [],
       "color": "#2a2a2a"
+    },
+    {
+      "name": "북서울미술관 휴먼 에러",
+      "dir": "buk_seoul_museum",
+      "type": ["instagram"],
+      "account": "seoulmuseumofart",
+      "keywords": "휴먼에러 오인환 장서영 북서울",
+      "color": "#3a3a5a"
+    },
+    {
+      "name": "서서울미술관 두더지들",
+      "dir": "seo_seoul_museum",
+      "type": ["instagram"],
+      "account": "seoseoulmuseumofart",
+      "keywords": "두더지들 김희천",
+      "color": "#4a4a6a"
+    },
+    {
+      "name": "서울조각페스티벌",
+      "dir": "seoul_sculpture_festival",
+      "type": ["instagram", "google_images"],
+      "account": "artinseoul.sculpture",
+      "keywords": "서울조각페스티벌 뚝섬 열린송현",
+      "query": "서울조각페스티벌 열린송현녹지광장 뚝섬한강공원 Seoul Sculpture Festival",
+      "color": "#5a5a3a"
+    },
+    {
+      "name": "농심 삼계탕사발면",
+      "dir": "nongshim_samgyetang",
+      "type": ["manual", "google_images"],
+      "query": "농심 삼계탕사발면 nongshim samgyetang bowl noodle",
+      "urls": [],
+      "color": "#9a6a1a"
     }
   ]
 }
