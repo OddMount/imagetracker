@@ -1,7 +1,8 @@
 # Imagetracker — Claude Code 컨텍스트
 
 하퍼스 바자 코리아 에디터(최노아)의 아티클 이미지 레퍼런스 페이지 생성 툴.
-배포 URL: https://imagetracker-nine.vercel.app/ref/{slug}
+배포 URL: https://imagetracker-sunwoo6.vercel.app/ref/{slug}
+(Vercel 프로젝트: sunwoo6/imagetracker. GitHub: tuneupyourbalance-lab/imagetracker. 2026-08-17에 원 소유자 계정에서 이 계정으로 이전됨 — 예전 URL(imagetracker-nine.vercel.app)은 더 이상 안 씀)
 
 ---
 
@@ -39,12 +40,14 @@ imagetracker/
 2. `articles/{slug}.json` 생성
 3. `python3 scrape.py {slug}` 실행 (Bash)
 4. `git add references/ articles/ && git commit -m "Add {slug}" && git push` (Bash)
-5. 완료 후 URL 반환: `https://imagetracker-nine.vercel.app/ref/{slug}`
+5. 완료 후 URL 반환: `https://imagetracker-sunwoo6.vercel.app/ref/{slug}`
 
 **slug 규칙:** 영문 소문자+하이픈, 아티클 주제 한두 단어
 예) 레인코트 → `raincoat`, 여름 맥주 → `beer-summer`, 핀란드 사우나 → `sauna`
 
-**원고에 인스타 계정이 명시 안 된 경우:** Claude가 업체명으로 추측해서 넣고 진행, 틀리면 수정 요청
+**원고에 인스타 계정이 명시 안 된 경우:** Claude가 업체명으로 추측하지 말고 WebSearch로 실제 계정을 찾아서 넣고 진행 (2026-08-17: 추측 대신 검색으로 정확도 올림). 그래도 틀리면 수정 요청.
+
+**매거진형 원고(맛집 리스트가 아닌 경우):** 원고 전체가 스팟 목록이 아닐 수 있음(제품 소개, 뉴스성 언급 등 섞여있는 경우). **주소가 명시됐거나 인스타 링크/계정이 직접 언급된 항목만** spots로 만들고, 특정 장소·계정이 없는 단순 제품/브랜드 뉴스는 제외 (예: 2026-08-17 fig-dessert 아티클에서 무화과 디저트 5곳은 포함, 특정 매장 없는 라면/컵국수 언급은 제외).
 
 ---
 
@@ -111,10 +114,20 @@ imagetracker/
 
 ## 스크래퍼 설정값
 
-- 인스타 최대 수집: 15장 (관련도 점수순 정렬)
-- 네이버 최대 수집: 12장 (100KB 이상만, 썸네일 제외)
+- 인스타 최대 수집: 20장 (`scrape.py`의 `MAX_IG`, 관련도 점수순 정렬) — ⚠️ 2026-08-17 사용자 피드백: 개수도 줄이고 파일 용량(웹에 올라가는 거라 너무 크면 안 됨)도 줄여야 함. 아직 미반영 — 다음 작업 시 PIL로 리사이즈/압축 추가할 것.
+- 네이버 최대 수집: 12장 (100KB 이상만, 썸네일 제외) — 위와 동일하게 용량 줄이기 대상
 - 세션 파일: `~/.config/instaloader/session-*`
 - 이미지 저장: `references/images/{slug}/{dir}/`
+
+## 인스타 로그인 (2026-08-17 전면 개편)
+
+**더 이상 아이디/비번/2FA 로그인 안 함.** instaloader의 자동화 로그인은 인스타가 2FA SMS 발송 자체를 막아서 계속 실패했음(우회 불가). 대신:
+
+- `~/.config/imagetracker-chrome-profile` 이라는 **스크래퍼 전용 Chrome 프로필**을 하나 만들어서 최초 1회만 직접 로그인해둠. 데일리로 쓰는 유저 Chrome 프로필에서 쿠키를 복사해오는 방식(예전 `scrape_ig_chrome.py`의 방식)은 2024+ Chrome의 세션 쿠키 보호(앱/키체인 바인딩) 때문에 복사본에서 `sessionid`가 복호화 안 돼서 폐기함.
+- `scrape.py`의 `ig_login()`이 이 전용 프로필의 쿠키를 자동으로 instaloader 세션으로 이식함 (`ig_login_from_chrome()`). 프롬프트 없이 자동 진행됨.
+- **세션 만료되면**: `python3 setup_chrome_login.py` 실행 → 뜨는 크롬 창에서 인스타그램 로그인 → 자동 감지되면 창 닫힘. 이후 다시 자동 로그인됨.
+- `scrape_ig_chrome.py`도 같은 전용 프로필을 직접 사용하도록 개편됨 (더 이상 데일리 크롬 프로필 자동탐지 안 함).
+- `ig_fetch_profile()`의 Playwright fallback(`ig_fetch_profile_playwright`)도 이 전용 프로필 기반으로 재작성됨 — `web_profile_info` 레거시 REST 엔드포인트가 막히면(400 등) GraphQL 응답 인터셉트 방식으로 자동 전환.
 
 ---
 
@@ -124,11 +137,14 @@ imagetracker/
 |---|---|---|
 | curry | references/curry.html | references/images/curry/ |
 | beer_summer | references/beer_summer.html | references/images/beer_summer/ |
+| fig-dessert | references/fig-dessert.html | references/images/fig-dessert/ |
 
 ---
 
 ## 주의사항
 
 - `update_html()`의 naver-grid 블록 교체는 regex 대신 str.find() 방식 사용 (regex는 중첩 div에서 오작동)
-- 인스타 세션 만료 시: `python3 scrape_ig.py --login` 재로그인
+- 인스타 세션 만료 시: `python3 setup_chrome_login.py` 재로그인 (아이디/비번 로그인 방식인 `scrape_ig.py --login`은 더 이상 안 씀 — 위 "인스타 로그인" 섹션 참고)
 - Vercel 환경변수 불필요 (이미지는 정적 파일로 서빙)
+- git commit 작성자 이메일이 GitHub 계정과 안 맞으면 Vercel이 "Deployment Blocked"로 배포를 막음. 새 PC에서 처음 커밋할 때 `git config user.email`이 자동으로 `{user}@{hostname}.local` 같은 걸로 잡히니, push 전에 `git config user.email "{github-id}@users.noreply.github.com"` 같은 걸로 미리 맞춰둘 것.
+- Vercel 프로젝트에 Deployment Protection(Vercel Authentication)이 켜져 있으면 배포된 URL이 로그인 화면으로 리다이렉트됨. 에디터에게 공유하는 공개 링크이므로 꺼져 있어야 함 (Project Settings → Deployment Protection).

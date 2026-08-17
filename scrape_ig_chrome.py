@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-인스타 이미지 수집 — 유저 크롬 프로필(로그인됨) 직접 사용 방식.
+인스타 이미지 수집 — 전용 크롬 프로필(로그인됨) 직접 사용 방식.
 instaloader 세션/직접 API가 인스타 락다운으로 막혔을 때의 '되는' 방법.
 
 핵심 원리:
-  - 크롬 프로필 중 인스타 로그인된 것을 자동 탐지 (Local State + Cookies sqlite의 sessionid)
-  - 크롬이 켜져 있으면 프로필이 잠기므로 → 쿠키만 임시폴더로 복사
-  - Playwright를 channel="chrome"(진짜 크롬)로 그 프로필로 실행
-    → 크롬이 자기 쿠키를 키체인 ACL로 스스로 복호화 (browser_cookie3처럼 막히지 않음)
-    → '유저가 브라우저 켜는 것과 동일'하게 로그인 상태로 진입
+  - ~/.config/imagetracker-chrome-profile 라는 스크래퍼 전용 크롬 프로필을 사용.
+    (최초 1회만 python3 setup_chrome_login.py 로 그 프로필에 직접 로그인해두면 됨)
+  - 유저 데일리 크롬 프로필의 쿠키를 복사해오는 방식은 더 이상 안 씀 —
+    2024+ 크롬 보안 강화로 세션 쿠키(sessionid)가 복사본에서는 복호화가 안 됨
+    (원본 프로필 경로에 묶인 키체인 보호 때문). 대신 이 스크립트가 처음부터 끝까지
+    같은 프로필을 직접 관리하면 복사 없이 정상적으로 로그인 상태가 유지됨.
   - 프로필 렌더 중 JSON 응답 인터셉트 → 게시물 caption + 고해상(image_versions2 1080) 수집
   - ★키워드 연관성 점수로 정렬해 상위 N개 선별 (단순 최신순 아님). scontent(640)는 fallback.
 
@@ -19,54 +20,17 @@ instaloader 세션/직접 API가 인스타 락다운으로 막혔을 때의 '되
         saengong_official:제습+습기+옷장 wechik.official:세탁+섬유유연제+냄새
   (계정 뒤 :키워드 생략하면 최신순으로 가져옴)
   IG_N 환경변수로 개수 조절 (기본 6)
+
+  세션 만료 시: python3 setup_chrome_login.py 로 재로그인
 """
-import os, sys, json, sqlite3, shutil, tempfile, time, requests
+import os, sys, requests
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-CHROME = os.path.expanduser("~/Library/Application Support/Google/Chrome")
+PROFILE_DIR = os.path.expanduser("~/.config/imagetracker-chrome-profile")
 N_PER = int(os.environ.get("IG_N", "6"))
 SCROLLS = int(os.environ.get("IG_SCROLLS", "4"))   # 후보 더 모으려 스크롤 횟수
 DL_UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
-
-
-def find_logged_in_profile():
-    """인스타 sessionid 쿠키가 있는 크롬 프로필 폴더를 찾는다."""
-    try:
-        ls = json.load(open(os.path.join(CHROME, "Local State")))
-        profiles = list(ls.get("profile", {}).get("info_cache", {}).keys())
-    except Exception:
-        profiles = ["Default", "Profile 1", "Profile 2", "Profile 3", "Profile 4"]
-    for d in profiles:
-        for sub in ["Network/Cookies", "Cookies"]:
-            cf = os.path.join(CHROME, d, sub)
-            if not os.path.exists(cf):
-                continue
-            try:
-                tmp = tempfile.mktemp(suffix=".db")
-                shutil.copy(cf, tmp)
-                con = sqlite3.connect(tmp); cur = con.cursor()
-                cur.execute("SELECT 1 FROM cookies WHERE host_key LIKE '%instagram.com%' AND name='sessionid' LIMIT 1")
-                hit = cur.fetchone()
-                con.close(); os.remove(tmp)
-                if hit:
-                    return d
-            except Exception:
-                pass
-            break
-    return None
-
-
-def stage_profile(profile_dir):
-    """잠긴 프로필의 쿠키만 임시 user-data-dir로 복사 (Default 프로필로)."""
-    tmp = tempfile.mkdtemp(prefix="pw-chrome-")
-    os.makedirs(os.path.join(tmp, "Default", "Network"), exist_ok=True)
-    shutil.copy(os.path.join(CHROME, "Local State"), os.path.join(tmp, "Local State"))
-    for f in ["Network/Cookies", "Network/Cookies-journal", "Cookies", "Preferences", "Secure Preferences"]:
-        s = os.path.join(CHROME, profile_dir, f)
-        if os.path.exists(s):
-            shutil.copy(s, os.path.join(tmp, "Default", f))
-    return tmp
 
 
 def big(u):
@@ -129,87 +93,81 @@ def pick(cands, keywords, n):
 
 
 def scrape(specs, outdir):
-    prof = find_logged_in_profile()
-    if not prof:
-        print("❌ 인스타 로그인된 크롬 프로필을 못 찾음. 크롬에서 인스타 로그인 확인 필요.")
+    if not os.path.isdir(PROFILE_DIR):
+        print(f"❌ 전용 크롬 프로필이 없음. 먼저 python3 setup_chrome_login.py 로 로그인하세요.")
         return
-    print(f"✅ 인스타 로그인 프로필: {prof}")
-    tmp = stage_profile(prof)
     out = Path(outdir)
-    try:
-        with sync_playwright() as p:
-            ctx = p.chromium.launch_persistent_context(
-                tmp, channel="chrome", headless=True,
-                args=["--no-first-run", "--no-default-browser-check", "--disable-background-networking"])
-            pg = ctx.new_page()
-            pg.goto("https://www.instagram.com/", wait_until="domcontentloaded", timeout=40000)
-            pg.wait_for_timeout(3000)
-            if "accounts/login" in pg.url:
-                print(f"❌ 로그인 안 됨 (세션 만료?) — {pg.url}"); ctx.close(); return
-            print("✅ 로그인 상태 진입")
+    with sync_playwright() as p:
+        ctx = p.chromium.launch_persistent_context(
+            PROFILE_DIR, channel="chrome", headless=True,
+            args=["--no-first-run", "--no-default-browser-check", "--disable-background-networking"])
+        pg = ctx.new_page()
+        pg.goto("https://www.instagram.com/", wait_until="domcontentloaded", timeout=40000)
+        pg.wait_for_timeout(3000)
+        if "accounts/login" in pg.url:
+            print(f"❌ 로그인 안 됨 (세션 만료?) — python3 setup_chrome_login.py 로 재로그인하세요."); ctx.close(); return
+        print("✅ 로그인 상태 진입")
 
-            for spec in specs:
-                acct = spec.split(":")[0]
-                keywords = spec.split(":")[1].split("+") if ":" in spec else []
-                d = out / acct.replace(".", "_"); d.mkdir(parents=True, exist_ok=True)
+        for spec in specs:
+            acct = spec.split(":")[0]
+            keywords = spec.split(":")[1].split("+") if ":" in spec else []
+            d = out / acct.replace(".", "_"); d.mkdir(parents=True, exist_ok=True)
 
-                nodes = {}          # code -> {url, caption}  (JSON, 고해상+캡션)
-                scont = []          # fallback scontent URLs (640, 캡션 없음)
+            nodes = {}          # code -> {url, caption}  (JSON, 고해상+캡션)
+            scont = []          # fallback scontent URLs (640, 캡션 없음)
 
-                def on_resp(resp, _n=nodes, _s=scont):
-                    u = resp.url
-                    if big(u):
-                        _s.append(u)
-                    ct = (resp.headers or {}).get("content-type", "")
-                    if "json" in ct and ("instagram.com" in u):
-                        try:
-                            walk_json(resp.json(), _n)
-                        except Exception:
-                            pass
-                pg.on("response", on_resp)
-                try:
-                    pg.goto(f"https://www.instagram.com/{acct}/", wait_until="load", timeout=40000)
-                    pg.wait_for_timeout(3000)
-                    for _ in range(SCROLLS):
-                        pg.mouse.wheel(0, 2600); pg.wait_for_timeout(1800)
-                except Exception as e:
-                    print(f"  {acct} load-err {str(e)[:50]}")
-                pg.remove_listener("response", on_resp)
+            def on_resp(resp, _n=nodes, _s=scont):
+                u = resp.url
+                if big(u):
+                    _s.append(u)
+                ct = (resp.headers or {}).get("content-type", "")
+                if ("json" in ct or "javascript" in ct) and ("instagram.com" in u):
+                    try:
+                        walk_json(resp.json(), _n)
+                    except Exception:
+                        pass
+            pg.on("response", on_resp)
+            try:
+                pg.goto(f"https://www.instagram.com/{acct}/", wait_until="load", timeout=40000)
+                pg.wait_for_timeout(3000)
+                for _ in range(SCROLLS):
+                    pg.mouse.wheel(0, 2600); pg.wait_for_timeout(1800)
+            except Exception as e:
+                print(f"  {acct} load-err {str(e)[:50]}")
+            pg.remove_listener("response", on_resp)
 
-                # 후보 구성: JSON(캡션·고해상) 우선, 없으면 scontent
-                cands = []
-                order = 0
-                seen_url = set()
-                for code, info in nodes.items():
-                    k = info["url"].split("?")[0]
+            # 후보 구성: JSON(캡션·고해상) 우선, 없으면 scontent
+            cands = []
+            order = 0
+            seen_url = set()
+            for code, info in nodes.items():
+                k = info["url"].split("?")[0]
+                if k in seen_url:
+                    continue
+                seen_url.add(k)
+                cands.append((order, info["url"], info.get("caption", "")))
+                order += 1
+            if len(cands) < N_PER:  # JSON 부족 → scontent 보강(캡션 없음)
+                for u in scont:
+                    k = u.split("?")[0]
                     if k in seen_url:
                         continue
                     seen_url.add(k)
-                    cands.append((order, info["url"], info.get("caption", "")))
+                    cands.append((order, u, ""))
                     order += 1
-                if len(cands) < N_PER:  # JSON 부족 → scontent 보강(캡션 없음)
-                    for u in scont:
-                        k = u.split("?")[0]
-                        if k in seen_url:
-                            continue
-                        seen_url.add(k)
-                        cands.append((order, u, ""))
-                        order += 1
 
-                chosen = pick(cands, keywords, N_PER)
-                ok = 0
-                for i, (_o, u, _c) in enumerate(chosen, 1):
-                    try:
-                        r = requests.get(u, headers=DL_UA, timeout=20)
-                        if r.status_code == 200 and len(r.content) > 12000 and r.content[:1] != b"<":
-                            (d / f"{acct.replace('.', '_')}_ig_{i}.jpg").write_bytes(r.content); ok += 1
-                    except Exception:
-                        pass
-                tag = f"(키워드 {keywords} 연관순)" if keywords else "(최신순)"
-                print(f"  @{acct}: {ok}컷 저장 {tag} · 후보 {len(cands)}(JSON {len(nodes)})")
-            ctx.close()
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+            chosen = pick(cands, keywords, N_PER)
+            ok = 0
+            for i, (_o, u, _c) in enumerate(chosen, 1):
+                try:
+                    r = requests.get(u, headers=DL_UA, timeout=20)
+                    if r.status_code == 200 and len(r.content) > 12000 and r.content[:1] != b"<":
+                        (d / f"{acct.replace('.', '_')}_ig_{i}.jpg").write_bytes(r.content); ok += 1
+                except Exception:
+                    pass
+            tag = f"(키워드 {keywords} 연관순)" if keywords else "(최신순)"
+            print(f"  @{acct}: {ok}컷 저장 {tag} · 후보 {len(cands)}(JSON {len(nodes)})")
+        ctx.close()
     print("DONE")
 
 

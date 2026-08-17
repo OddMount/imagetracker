@@ -46,6 +46,46 @@ def load_config(slug):
 
 # ── 인스타그램 ────────────────────────────────────────────────────
 
+CHROME_PROFILE_DIR = os.path.expanduser("~/.config/imagetracker-chrome-profile")
+
+
+def ig_login_from_chrome():
+    """setup_chrome_login.py로 로그인해둔 전용 크롬 프로필 쿠키를 instaloader 세션으로 이식.
+    아이디/비번/2FA 프롬프트 없이 로그인 (2FA 문자가 자동화 로그인엔 잘 안 와서 이 방식으로 대체)."""
+    if not os.path.isdir(CHROME_PROFILE_DIR):
+        return None
+    try:
+        with sync_playwright() as p:
+            ctx = p.chromium.launch_persistent_context(
+                CHROME_PROFILE_DIR, channel="chrome", headless=True,
+                args=["--no-first-run", "--no-default-browser-check", "--disable-background-networking"])
+            pg = ctx.new_page()
+            pg.goto("https://www.instagram.com/", wait_until="domcontentloaded", timeout=40000)
+            pg.wait_for_timeout(2000)
+            cookies = {c["name"]: c["value"] for c in ctx.cookies() if "instagram.com" in c["domain"]}
+            ctx.close()
+    except Exception as e:
+        print(f"  크롬 프로필 로그인 실패: {str(e)[:80]}")
+        return None
+
+    if "csrftoken" not in cookies or "sessionid" not in cookies:
+        print("  크롬 프로필 세션 만료됨 — python3 setup_chrome_login.py 로 재로그인 필요")
+        return None
+
+    L = instaloader.Instaloader(quiet=True)
+    L.load_session("_", cookies)
+    real_username = L.test_login()
+    if not real_username:
+        print("  크롬 프로필 세션이 유효하지 않음 — python3 setup_chrome_login.py 로 재로그인 필요")
+        return None
+
+    L.context.username = real_username
+    SESSION_DIR.mkdir(parents=True, exist_ok=True)
+    L.save_session_to_file(str(SESSION_DIR / f"session-{real_username}"))
+    print(f"인스타 세션 로그인 (크롬 프로필 이식): @{real_username}")
+    return L.context._session
+
+
 def ig_login(force=False):
     sessions = list(SESSION_DIR.glob("session-*"))
     if sessions and not force:
@@ -54,9 +94,19 @@ def ig_login(force=False):
         L.load_session_from_file(uname, str(sessions[0]))
         print(f"인스타 세션 로드: @{uname}")
         return L.context._session
-    print("Instagram 로그인")
-    username = input("아이디: ").strip()
-    password = getpass.getpass("비밀번호: ")
+
+    chrome_session = ig_login_from_chrome()
+    if chrome_session is not None:
+        return chrome_session
+
+    username = os.environ.get("IG_USERNAME", "").strip()
+    password = os.environ.get("IG_PASSWORD", "")
+    if username and password:
+        print(f"Instagram 로그인 (.env.local의 IG_USERNAME 사용: @{username})")
+    else:
+        print("Instagram 로그인")
+        username = input("아이디: ").strip()
+        password = getpass.getpass("비밀번호: ")
     L = instaloader.Instaloader(quiet=True)
     try:
         L.login(username, password)
@@ -68,72 +118,43 @@ def ig_login(force=False):
 
 
 def ig_fetch_profile_playwright(account, ig_session):
-    """API 차단 계정용 Playwright fallback — 실제 브라우저로 세션 쿠키 주입해서 우회."""
+    """API 차단 계정용 Playwright fallback — 전용 크롬 프로필로 실제 브라우저 렌더링해서 우회.
+    (web_profile_info 같은 레거시 REST 엔드포인트는 더 이상 안 뜨고, 프로필 페이지 렌더 중
+    발생하는 GraphQL 응답을 가로채는 방식만 안정적으로 동작함 — scrape_ig_chrome.py와 동일 기법)"""
+    import scrape_ig_chrome as chrome_scraper
+
     print(f"  Playwright fallback: @{account}")
-    posts = {}
+    if not os.path.isdir(CHROME_PROFILE_DIR):
+        print("  전용 크롬 프로필 없음 — python3 setup_chrome_login.py 로 로그인 필요")
+        return {}
 
-    def parse_edges_local(edges):
-        out = {}
-        for edge in edges:
-            node = edge.get("node", {})
-            sc = node.get("shortcode")
-            if not sc:
-                continue
-            if node.get("__typename") == "GraphSidecar":
-                children = node.get("edge_sidecar_to_children", {}).get("edges", [])
-                img_url = children[0]["node"]["display_url"] if children else node.get("display_url", "")
-            else:
-                img_url = node.get("display_url", "")
-            cap_edges = node.get("edge_media_to_caption", {}).get("edges", [])
-            out[sc] = {
-                "img_url": img_url,
-                "caption": cap_edges[0]["node"]["text"] if cap_edges else "",
-            }
-        return out
-
+    nodes = {}
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            user_agent=IG_HEADERS.get("user-agent", "Mozilla/5.0"),
-            viewport={"width": 1280, "height": 800},
-            extra_http_headers={"Accept-Language": "ko-KR,ko;q=0.9"},
-        )
-        # instaloader 세션 쿠키 → Playwright로 이식
-        pw_cookies = []
-        for c in ig_session.cookies:
-            pw_cookies.append({
-                "name": c.name,
-                "value": c.value,
-                "domain": c.domain if c.domain else ".instagram.com",
-                "path": c.path if c.path else "/",
-            })
-        if pw_cookies:
-            context.add_cookies(pw_cookies)
-
-        page = context.new_page()
+        ctx = p.chromium.launch_persistent_context(
+            CHROME_PROFILE_DIR, channel="chrome", headless=True,
+            args=["--no-first-run", "--no-default-browser-check", "--disable-background-networking"])
+        page = ctx.new_page()
 
         def handle_response(response):
-            url = response.url
-            if "web_profile_info" in url and account.lower() in url.lower():
+            u = response.url
+            ct = (response.headers or {}).get("content-type", "")
+            if ("json" in ct or "javascript" in ct) and "instagram.com" in u:
                 try:
-                    data = response.json()
-                    user = data.get("data", {}).get("user", {})
-                    if user:
-                        media = user.get("edge_owner_to_timeline_media", {})
-                        posts.update(parse_edges_local(media.get("edges", [])))
-                        print(f"  Playwright API 인터셉트: {len(posts)}개 포스트")
+                    chrome_scraper.walk_json(response.json(), nodes)
                 except Exception:
                     pass
 
         page.on("response", handle_response)
         try:
-            page.goto(f"https://www.instagram.com/{account}/", wait_until="networkidle", timeout=30000)
+            page.goto(f"https://www.instagram.com/{account}/", wait_until="load", timeout=40000)
             page.wait_for_timeout(3000)
+            for _ in range(4):
+                page.mouse.wheel(0, 2600); page.wait_for_timeout(1800)
         except Exception as e:
             print(f"  Playwright 로드 실패: {e}")
-        context.close()
-        browser.close()
+        ctx.close()
 
+    posts = {code: {"img_url": info["url"], "caption": info["caption"]} for code, info in nodes.items()}
     print(f"  Playwright 수집: {len(posts)}개 포스트")
     return posts
 
@@ -145,8 +166,9 @@ def ig_fetch_profile(session, account, max_posts=100):
         headers=IG_HEADERS, timeout=15
     )
     if r.status_code != 200:
-        print(f"  프로필 API 실패: {r.status_code}")
-        return None, {}
+        print(f"  프로필 API 실패: {r.status_code} → Playwright fallback")
+        posts = ig_fetch_profile_playwright(account, session)
+        return {"full_name": "", "biography": "", "is_private": False}, posts
     data = r.json()
     if "data" not in data or not data["data"].get("user"):
         # API 차단 계정 → Playwright fallback
