@@ -23,15 +23,29 @@ from playwright.sync_api import sync_playwright
 # ── 설정 ─────────────────────────────────────────────────────────
 
 SESSION_DIR = Path.home() / ".config" / "instaloader"
-MAX_IG      = 20    # 인스타 최대 수집
-MAX_NAVER   = 12    # 네이버 최대 수집
+MAX_IG      = 14    # 인스타 최대 수집 (웹에 올라가는 갤러리라 너무 많이 안 쌓기)
+MAX_NAVER   = 8     # 네이버/카카오 최대 수집
 MIN_SIZE    = 100_000  # 네이버 썸네일 제외 기준 (100KB)
+IMG_MAX_W   = 1440   # 저장 이미지 최대 가로폭(px) — 웹 페이지용이라 원본 그대로 안 씀
+IMG_QUALITY = 82     # JPEG 저장 퀄리티
 
 MOBILE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
 IG_HEADERS = {
     "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15",
     "X-IG-App-ID": "936619743392459",
 }
+
+
+def save_web_image(content: bytes, fname: Path) -> int:
+    """다운로드한 이미지를 웹 갤러리용으로 리사이즈+압축해서 저장. 저장된 바이트 수 반환."""
+    img = Image.open(io.BytesIO(content))
+    if img.mode not in ("RGB", "L"):
+        img = img.convert("RGB")
+    if img.width > IMG_MAX_W:
+        new_h = int(img.height * IMG_MAX_W / img.width)
+        img = img.resize((IMG_MAX_W, new_h), Image.LANCZOS)
+    img.save(fname, "JPEG", quality=IMG_QUALITY, optimize=True)
+    return fname.stat().st_size
 
 
 # ── Config 로드 ───────────────────────────────────────────────────
@@ -230,6 +244,11 @@ def ig_fetch_profile(session, account, max_posts=100):
         except Exception:
             break
 
+    if not posts:
+        # edge_owner_to_timeline_media가 메타(계정 있음)는 주면서 미디어 자체는 비워서
+        # 주는 경우가 흔해짐 → 프로필 정보는 이미 얻었으니 살려두고 포스트만 fallback으로.
+        print("  직접 API는 포스트 0개 반환 → Playwright fallback")
+        posts = ig_fetch_profile_playwright(account, session)
     print(f"  총 {len(posts)}개 포스트 수집")
     return meta, posts
 
@@ -288,7 +307,7 @@ def scrape_instagram(spot, slug, ig_session):
             try:
                 r = requests.get(img_url, headers=dl_headers, timeout=20)
                 r.raise_for_status()
-                filepath.write_bytes(r.content)
+                save_web_image(r.content, filepath)
                 tag = f"관련({score}점)" if score > 0 else "최신"
                 print(f"    [{tag}] {sc}")
                 saved.append({"path": str(filepath), "post_id": sc,
@@ -399,9 +418,9 @@ def scrape_naver(spot, slug):
             if len(r.content) < MIN_SIZE:
                 continue
             fname = dest / f"naver_{idx:02d}.jpg"
-            fname.write_bytes(r.content)
+            size = save_web_image(r.content, fname)
             saved.append({"path": str(fname), "src_url": src, "naver_url": used_url, "dir": dir_name})
-            print(f"    저장: {fname.name} ({len(r.content)//1024}KB)")
+            print(f"    저장: {fname.name} ({size//1024}KB)")
             idx += 1
         except Exception as e:
             print(f"    다운로드 실패: {e}")
@@ -471,11 +490,10 @@ def scrape_google_images(spot, slug):
             r.raise_for_status()
             if len(r.content) < 15_000:
                 continue
-            img = Image.open(io.BytesIO(r.content)).convert("RGB")
             fname = dest / f"gimg_{idx:02d}.jpg"
-            img.save(fname, "JPEG", quality=92)
+            size = save_web_image(r.content, fname)
             saved.append({"path": str(fname), "src_url": url, "query": query})
-            print(f"    [{idx}] {fname.name}  {img.size[0]}x{img.size[1]}  {len(r.content)//1024}KB")
+            print(f"    [{idx}] {fname.name}  {size//1024}KB")
             idx += 1
         except Exception as e:
             print(f"    스킵: {e}")
@@ -621,9 +639,9 @@ def scrape_kakao(spot, slug):
             if len(r.content) < MIN_SIZE:
                 continue
             fname = dest / f"kakao_{idx:02d}.jpg"
-            fname.write_bytes(r.content)
+            size = save_web_image(r.content, fname)
             saved.append({"path": str(fname), "src_url": src, "kakao_url": place_url, "dir": dir_name})
-            print(f"    저장: {fname.name} ({len(r.content)//1024}KB)")
+            print(f"    저장: {fname.name} ({size//1024}KB)")
         except Exception as e:
             print(f"    다운로드 실패: {e}")
 
@@ -722,9 +740,8 @@ def scrape_diningcode(spot, slug):
             r.raise_for_status()
             if len(r.content) < 30_000:
                 continue
-            img = Image.open(io.BytesIO(r.content)).convert("RGB")
             fname = dest / f"dc_{idx:02d}.jpg"
-            img.save(fname, "JPEG", quality=90)
+            save_web_image(r.content, fname)
             agestr = f"{age:.1f}년 전" if age is not None else "날짜 미상"
             saved.append({"path": str(fname), "src_url": profile_url,
                           "photo_url": src, "age": agestr, "dir": dir_name})

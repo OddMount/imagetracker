@@ -114,8 +114,9 @@ imagetracker/
 
 ## 스크래퍼 설정값
 
-- 인스타 최대 수집: 20장 (`scrape.py`의 `MAX_IG`, 관련도 점수순 정렬) — ⚠️ 2026-08-17 사용자 피드백: 개수도 줄이고 파일 용량(웹에 올라가는 거라 너무 크면 안 됨)도 줄여야 함. 아직 미반영 — 다음 작업 시 PIL로 리사이즈/압축 추가할 것.
-- 네이버 최대 수집: 12장 (100KB 이상만, 썸네일 제외) — 위와 동일하게 용량 줄이기 대상
+- 인스타 최대 수집: 14장 (`scrape.py`의 `MAX_IG`, 관련도 점수순 정렬)
+- 네이버/카카오 최대 수집: 8장 (`MAX_NAVER`, 100KB 이상만 원본에서 걸러냄)
+- **저장 시 리사이즈+압축** (2026-08-21 반영, `save_web_image()`): 가로 최대 1440px로 리사이즈, JPEG quality 82로 재저장. 예전엔 naver/kakao 원본을 그대로 저장해서 장당 5~7MB까지 나왔음 — 웹 갤러리인데 너무 무거워서 고침. `manual` 타입(에디터 직접 제공 URL)만 원본 그대로 저장(품질 보존 목적, 압축 안 함).
 - 세션 파일: `~/.config/instaloader/session-*`
 - 이미지 저장: `references/images/{slug}/{dir}/`
 
@@ -128,6 +129,7 @@ imagetracker/
 - **세션 만료되면**: `python3 setup_chrome_login.py` 실행 → 뜨는 크롬 창에서 인스타그램 로그인 → 자동 감지되면 창 닫힘. 이후 다시 자동 로그인됨.
 - `scrape_ig_chrome.py`도 같은 전용 프로필을 직접 사용하도록 개편됨 (더 이상 데일리 크롬 프로필 자동탐지 안 함).
 - `ig_fetch_profile()`의 Playwright fallback(`ig_fetch_profile_playwright`)도 이 전용 프로필 기반으로 재작성됨 — `web_profile_info` 레거시 REST 엔드포인트가 막히면(400 등) GraphQL 응답 인터셉트 방식으로 자동 전환.
+- **(2026-08-21 버그 수정)** 인스타 CDN 도메인이 `cdninstagram.com` 외에 `fbcdn.net`(`instagram.*.fna.fbcdn.net`) 형태로도 뜨는데, `scrape_ig_chrome.py`의 `walk_json`/`big()`이 `cdninstagram`만 체크해서 최신 게시물 이미지를 통째로 걸러내던 버그가 있었음 → `is_ig_cdn()` 헬퍼로 두 도메인 다 인정하도록 수정. 또한 `ig_fetch_profile()`이 직접 API가 200으로 응답해도 `edge_owner_to_timeline_media`가 빈 경우(계정 메타는 주면서 미디어는 안 주는 케이스가 흔해짐) fallback을 안 타던 버그도 수정 — 이제 포스트 0개면 무조건 Playwright fallback으로 넘어감.
 
 ---
 
@@ -138,6 +140,7 @@ imagetracker/
 | curry | references/curry.html | references/images/curry/ |
 | beer_summer | references/beer_summer.html | references/images/beer_summer/ |
 | fig-dessert | references/fig-dessert.html | references/images/fig-dessert/ |
+| women-running | references/women-running.html | references/images/women-running/ |
 
 ---
 

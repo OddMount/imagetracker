@@ -1,0 +1,87 @@
+{
+  "slug": "women-running",
+  "title": "달리는 여자들을 위한 캘린더",
+  "spots": [
+    {
+      "name": "나고야 우먼스 마라톤",
+      "dir": "nagoya_marathon",
+      "type": ["instagram"],
+      "account": "nagoya_gowomen",
+      "addr": "일본 나고야",
+      "color": "#7a1f3d",
+      "keywords": "나고야 마라톤 여성 바카라 완주"
+    },
+    {
+      "name": "ROUND GIRLS 100",
+      "dir": "round_girls_100",
+      "type": ["instagram"],
+      "account": "round_girls_100",
+      "addr": "일본 시즈오카 후지시",
+      "color": "#2a4a3a",
+      "keywords": "100마일 트레일 후지 여성러너"
+    },
+    {
+      "name": "라 파리지엔",
+      "dir": "la_parisienne",
+      "type": ["instagram"],
+      "account": "la_parisienne_course",
+      "addr": "프랑스 파리",
+      "color": "#1a3a5a",
+      "keywords": "파리 러닝 에펠탑 여성"
+    },
+    {
+      "name": "우먼스 아우라 트레일",
+      "dir": "womens_aura_trail",
+      "type": ["instagram"],
+      "account": "womens_aura_trail",
+      "addr": "경기 안성시 금광호수",
+      "color": "#4a3a1a",
+      "keywords": "트레일 안성 금광호수 여성"
+    },
+    {
+      "name": "서울 여성마라톤",
+      "dir": "seoul_women_marathon",
+      "type": ["instagram"],
+      "account": "womenmarathon",
+      "addr": "서울 상암 월드컵공원 평화광장",
+      "color": "#3a1a4a",
+      "keywords": "서울 여성마라톤 상암"
+    },
+    {
+      "name": "서울비너스",
+      "dir": "seoulvenus",
+      "type": ["instagram"],
+      "account": "seoulvenus",
+      "addr": "서울",
+      "color": "#1a4a4a",
+      "keywords": "러닝크루 비너스런 훈련"
+    },
+    {
+      "name": "다뛰여",
+      "dir": "feministrunningmate",
+      "type": ["instagram"],
+      "account": "feministrunningmate",
+      "addr": "서울 상암",
+      "color": "#5a1a1a",
+      "keywords": "러닝크루 정기런 페미니스트"
+    },
+    {
+      "name": "굿러너 시스터즈",
+      "dir": "goodrunner_co",
+      "type": ["instagram"],
+      "account": "goodrunner_co",
+      "addr": "서울",
+      "color": "#3a3a1a",
+      "keywords": "러닝크루 하프마라톤 트레일러닝"
+    },
+    {
+      "name": "필레이디",
+      "dir": "feellady",
+      "type": ["instagram"],
+      "account": "feellady_girlcrush",
+      "addr": "서울",
+      "color": "#4a1a3a",
+      "keywords": "러닝크루 마라톤 트레일 사이클"
+    }
+  ]
+}

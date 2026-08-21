@@ -33,8 +33,14 @@ SCROLLS = int(os.environ.get("IG_SCROLLS", "4"))   # 후보 더 모으려 스크
 DL_UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
 
 
+def is_ig_cdn(u):
+    # 인스타 CDN 호스트명이 cdninstagram.com 계열과 fbcdn.net 계열(instagram.*.fna.fbcdn.net)
+    # 둘 다로 뜸 — 하나만 체크하면 최신 게시물이 통째로 걸러짐.
+    return "cdninstagram" in u or "fbcdn.net" in u
+
+
 def big(u):
-    return "cdninstagram" in u and (".jpg" in u or ".webp" in u) and not any(
+    return is_ig_cdn(u) and (".jpg" in u or ".webp" in u) and not any(
         x in u for x in ["s150x150", "s320x320", "s640x640", "profile_pic"])
 
 
@@ -59,7 +65,7 @@ def walk_json(obj, out):
             iv = obj.get("image_versions2")
             if isinstance(iv, dict) and iv.get("candidates"):
                 du = iv["candidates"][0].get("url")
-        if code and du and "cdninstagram" in du:
+        if code and du and is_ig_cdn(du):
             prev = out.get(code)
             # caption 있는 쪽 우선 보존
             if not prev or (cap and not prev.get("caption")):
