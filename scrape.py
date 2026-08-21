@@ -754,7 +754,7 @@ def scrape_diningcode(spot, slug):
 
 # ── HTML 생성/업데이트 ────────────────────────────────────────────
 
-GITHUB_RAW = "https://raw.githubusercontent.com/OddMount/imagetracker/master/references/images"
+GITHUB_RAW = "https://raw.githubusercontent.com/tuneupyourbalance-lab/imagetracker/master/references/images"
 
 def _dl_url(web_path, dl_name):
     """GitHub raw는 크로스오리진 → download 속성 무시. /api/download 프록시로 우회."""

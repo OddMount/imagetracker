@@ -178,7 +178,7 @@ def index():
     return send_file('index.html')
 
 
-GITHUB_RAW = "https://raw.githubusercontent.com/OddMount/imagetracker/master/references/images"
+GITHUB_RAW = "https://raw.githubusercontent.com/tuneupyourbalance-lab/imagetracker/master/references/images"
 
 @app.route('/ref/images/<path:filename>')
 def ref_image(filename):
